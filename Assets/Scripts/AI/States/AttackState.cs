@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class AttackState : IEnemyState
 {
+    IEnemyAttackBehavior _behavior;
+
     float _attackRange = 1.5f;
     float _attackDelay = 1.0f;
     float _timer = 0f;
@@ -11,6 +13,13 @@ public class AttackState : IEnemyState
 
     public void EnterState(EnemyStateManager enemy)
     {
+        _behavior = enemy.AttackBehavior;
+        if (_behavior != null)
+        {
+            _behavior.EnterState(enemy);
+            return;
+        }
+
         enemy.GetComponent<SpriteRenderer>().color = Color.magenta;
 
         _player = GameObject.FindGameObjectWithTag("Player")?.transform;
@@ -18,10 +27,22 @@ public class AttackState : IEnemyState
         _timer = 0f;
     }
 
-    public void ExitState(EnemyStateManager enemy) { }
+    public void ExitState(EnemyStateManager enemy)
+    {
+        if (_behavior != null)
+        {
+            _behavior.ExitState(enemy);
+        }
+    }
 
     public void UpdateState(EnemyStateManager enemy)
     {
+        if (_behavior != null)
+        {
+            _behavior.UpdateState(enemy);
+            return;
+        }
+
         if (_player == null)
         {
             enemy.TransitionToState(new IdleState());

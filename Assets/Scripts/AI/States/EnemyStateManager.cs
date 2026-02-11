@@ -4,6 +4,22 @@ public class EnemyStateManager : MonoBehaviour
 {
     public IEnemyState CurrentState;
 
+    [Header("State Behaviors")]
+    [SerializeField] MonoBehaviour _idleBehavior;
+    [SerializeField] MonoBehaviour _patrolBehavior;
+    [SerializeField] MonoBehaviour _chaseBehavior;
+    [SerializeField] MonoBehaviour _attackBehavior;
+
+    public IEnemyIdleBehavior IdleBehavior => _idleBehavior as IEnemyIdleBehavior;
+    public IEnemyPatrolBehavior PatrolBehavior => _patrolBehavior as IEnemyPatrolBehavior;
+    public IEnemyChaseBehavior ChaseBehavior => _chaseBehavior as IEnemyChaseBehavior;
+    public IEnemyAttackBehavior AttackBehavior => _attackBehavior as IEnemyAttackBehavior;
+
+    private void Awake()
+    {
+        CacheBehaviors();
+    }
+
     private void Start()
     {
         TransitionToState(new IdleState());
@@ -55,6 +71,38 @@ public class EnemyStateManager : MonoBehaviour
         else
         {
             playerHealth?.TakeDamage(damage);
+        }
+    }
+
+    private void CacheBehaviors()
+    {
+        if (_idleBehavior != null && _patrolBehavior != null && _chaseBehavior != null && _attackBehavior != null)
+        {
+            return;
+        }
+
+        var components = GetComponents<MonoBehaviour>();
+        foreach (var component in components)
+        {
+            if (_idleBehavior == null && component is IEnemyIdleBehavior)
+            {
+                _idleBehavior = component;
+            }
+
+            if (_patrolBehavior == null && component is IEnemyPatrolBehavior)
+            {
+                _patrolBehavior = component;
+            }
+
+            if (_chaseBehavior == null && component is IEnemyChaseBehavior)
+            {
+                _chaseBehavior = component;
+            }
+
+            if (_attackBehavior == null && component is IEnemyAttackBehavior)
+            {
+                _attackBehavior = component;
+            }
         }
     }
 }

@@ -2,26 +2,44 @@ using UnityEngine;
 
 public class ChaseState : IEnemyState
 {
+    IEnemyChaseBehavior _behavior;
+
     Transform _player;
     float _chaseSpeed;
     float _chaseRange = 15f;
     float _attackRange = 1.5f;
 
-    ShieldEnemyManager _shieldEnemy;
-
     public void EnterState(EnemyStateManager enemy)
     {
+        _behavior = enemy.ChaseBehavior;
+        if (_behavior != null)
+        {
+            _behavior.EnterState(enemy);
+            return;
+        }
+
         enemy.GetComponent<SpriteRenderer>().color = Color.red;
         _player = GameObject.FindGameObjectWithTag("Player")?.transform;
         _chaseSpeed = enemy.GetComponent<EnemyDataManager>().EnemyData.MoveSpeed;
 
-        _shieldEnemy = enemy.GetComponent<ShieldEnemyManager>();
     }
 
-    public void ExitState(EnemyStateManager enemy) { }
+    public void ExitState(EnemyStateManager enemy)
+    {
+        if (_behavior != null)
+        {
+            _behavior.ExitState(enemy);
+        }
+    }
 
     public void UpdateState(EnemyStateManager enemy)
     {
+        if (_behavior != null)
+        {
+            _behavior.UpdateState(enemy);
+            return;
+        }
+
         if (_player == null)
         {
             enemy.TransitionToState(new IdleState());
@@ -40,16 +58,7 @@ public class ChaseState : IEnemyState
         if (dist < _attackRange)
         {
             enemy.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
-
-            if (_shieldEnemy != null)
-            {
-                Debug.Log("<color=cyan>[Chase ¡æ ShieldEnemy_AttackState]</color>");
-                enemy.TransitionToState(new ShieldEnemy_AttackState());
-            }
-            else
-            {
-                enemy.TransitionToState(new AttackState());
-            }
+            enemy.TransitionToState(new AttackState());
             return;
         }
 

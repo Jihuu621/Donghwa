@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class PatrolState : IEnemyState
 {
+    IEnemyPatrolBehavior _behavior;
+
     float _movetime = 0f;
     float _moveTimer = 0f;
     bool _isPatrolling = false;
@@ -10,6 +12,13 @@ public class PatrolState : IEnemyState
 
     public void EnterState(EnemyStateManager enemy)
     {
+        _behavior = enemy.PatrolBehavior;
+        if (_behavior != null)
+        {
+            _behavior.EnterState(enemy);
+            return;
+        }
+
         enemy.GetComponent<SpriteRenderer>().color = Color.yellow;
         _isPatrolling = false;
         _moveTimer = 0f;
@@ -19,11 +28,21 @@ public class PatrolState : IEnemyState
 
     public void ExitState(EnemyStateManager enemy)
     {
-        // Debug.Log("[Patrol State] : Exit");
+        if (_behavior != null)
+        {
+            _behavior.ExitState(enemy);
+            return;
+        }
     }
 
     public void UpdateState(EnemyStateManager enemy)
     {
+        if (_behavior != null)
+        {
+            _behavior.UpdateState(enemy);
+            return;
+        }
+
         // 플레이어 인식 반경 체크
         if (_player != null)
         {

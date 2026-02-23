@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      SWARM-2560x1440 (1)_0: -8909995531569018338
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

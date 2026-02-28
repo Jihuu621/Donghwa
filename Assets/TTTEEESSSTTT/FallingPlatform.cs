@@ -20,22 +20,18 @@ public class FallingPlatform : MonoBehaviour
 
         float currentSpeed = rb.linearVelocity.magnitude;
         float currentRotationSpeed = Mathf.Abs(rb.angularVelocity);
-
         if (currentSpeed > minFallSpeed || currentRotationSpeed > minRotationSpeed)
         {
-            // 1. 충돌한 오브젝트가 "Enemy" 태그를 가졌는지 확인
             if (collision.gameObject.CompareTag("Enemy"))
             {
                 Health health = collision.gameObject.GetComponent<Health>();
-
                 if (health != null)
                 {
                     health.TakeDamage(damageAmount);
-                    Debug.Log($"{collision.gameObject.name}에게 낙하/회전 충돌 데미지!");
-                    DisablePlatformFunction();
+                    Debug.Log($"{collision.gameObject.name} 처치!");
                 }
+                DisablePlatformFunction();
             }
-            // 2. 바닥에 닿았을 때 기능 해제 (기존 코드 유지)
             else if (collision.gameObject.CompareTag("Ground"))
             {
                 DisablePlatformFunction();

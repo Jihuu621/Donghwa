@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d651f745ffb397b44ac888390ef90de0, type: 3}
+  m_Name: BishopPieceData
+  m_EditorClassIdentifier: 
+  pieceName: Bishop
+  damage: 20
+  stunChance: 0
+  stunDuration: 0
+  moveDistance: 6
+  moveSpeed: 15
+  effectRadius: 5
+  prefab: {fileID: 1779630415272890614, guid: 9844fad011f2e2646b7d4cd77a795553, type: 3}
+  poolSize: 3

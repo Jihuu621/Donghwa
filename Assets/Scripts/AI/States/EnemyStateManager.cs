@@ -40,6 +40,12 @@ public class EnemyStateManager : MonoBehaviour
 
     public void PerformAttack(float range)
     {
+        var notifier = GetComponent<EnemyAttackNotifier>();
+        if (notifier != null)
+        {
+            notifier.NotifyAttackPerformed();
+        }
+
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player == null) return;
 

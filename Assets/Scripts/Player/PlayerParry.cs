@@ -25,7 +25,12 @@ public class PlayerParry : MonoBehaviour
     public float parryHitGain = 30f;
     public float parryHitDecay = 10f;
     private float parryHitTimer = 0f; 
-    private float lastParryHitTime = 0f; 
+    private float lastParryHitTime = 0f;
+
+    [Header("디버깅용 짬통")]
+    public GameObject great;
+    public GameObject good;
+    public GameObject bad;
 
     private bool isFailTime = false;
     private bool isParryTime = false;
@@ -107,6 +112,25 @@ public class PlayerParry : MonoBehaviour
         yield return new WaitForSeconds(1f);
         isStunned = false;
     }
+    
+    IEnumerator DebugParry()
+    {
+        great.SetActive(true);
+        yield return new WaitForSeconds(0.6f);
+        great.SetActive(false);
+    }
+    IEnumerator DebugParry2()
+    {
+        good.SetActive(true);
+        yield return new WaitForSeconds(0.6f);
+        good.SetActive(false);
+    }
+    IEnumerator DebugParry3()
+    {
+        bad.SetActive(true);
+        yield return new WaitForSeconds(0.6f);
+        bad.SetActive(false);
+    }
 
     public float OnHit(float damage)
     {
@@ -120,6 +144,7 @@ public class PlayerParry : MonoBehaviour
         // 패링 실패 구간 (그대로 맞음)
         if (isFailTime)
         {
+            StartCoroutine(DebugParry3());
             Debug.Log("<color=grey>[플레이어] 패링 실패 구간 — 데미지 그대로</color>");
             return damage;
         }
@@ -127,8 +152,8 @@ public class PlayerParry : MonoBehaviour
         // 완벽한 패링
         if (isParryTime)
         {
+            StartCoroutine (DebugParry());
             Debug.Log("<color=lime>[플레이어] 완벽한 패링 성공! 데미지 0 / 패링 히트 +30 / 게이지 +5</color>");
-
             currentGauge = Mathf.Min(currentGauge + parryReward, maxGauge);
 
             parryHitGauge = Mathf.Min(parryHitGauge + parryHitGain, maxParryHitGauge);
@@ -144,9 +169,8 @@ public class PlayerParry : MonoBehaviour
         {
             float reduced = damage * (1f - guardDamageReduce);
             currentGauge -= guardPenalty;
-
+            StartCoroutine(DebugParry2());
             Debug.Log($"<color=yellow>[플레이어] 가드 성공! 피해 {reduced} / 게이지 -20</color>");
-
             if (currentGauge <= 0f)
             {
                 currentGauge = 0f;

@@ -1,33 +1,30 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 퀸: 플레이어 왼쪽에서 스폰 → 전방으로 이동하며 데미지 + 스턴.
+/// 퀸: 플레이어 왼쪽에서 스폰 → 왼쪽으로 이동하며 데미지 + 스턴.
+/// 플레이어 방향과 무관하게 항상 왼쪽 기준으로 동작한다.
 /// </summary>
 public class QueenPiece : ChessPiece
 {
-    private static Collider2D[] hitBuffer = new Collider2D[16];
+    private static readonly Collider2D[] hitBuffer = new Collider2D[16];
 
-    public override void Execute(Transform target, Vector3 playerPosition)
+    public override void Execute(Transform target, Vector3 playerPosition, float facingDir = 1f)
     {
         StartCoroutine(QueenRoutine(playerPosition));
     }
 
     private IEnumerator QueenRoutine(Vector3 playerPos)
     {
-        // 플레이어 왼쪽에 스폰
-        Vector3 spawnPos = playerPos + Vector3.left * skillData.queenSpawnOffset;
-        transform.position = spawnPos;
+        transform.position = playerPos + Vector3.left * skillData.queenSpawnOffset;
 
-        // 전방(왼쪽)으로 이동
         Vector3 moveDir = Vector3.left;
         float distanceTraveled = 0f;
         float totalDistance = skillData.queenMoveDistance;
         float speed = skillData.queenMoveSpeed;
 
-        // 히트한 적 중복 방지
-        System.Collections.Generic.List<Collider2D> hitTargets =
-            new System.Collections.Generic.List<Collider2D>(16);
+        List<Collider2D> hitTargets = new List<Collider2D>(16);
 
         while (distanceTraveled < totalDistance)
         {
@@ -43,6 +40,7 @@ public class QueenPiece : ChessPiece
 
                 hitTargets.Add(hitBuffer[i]);
                 GameObject enemy = hitBuffer[i].gameObject;
+
                 ApplyDamage(enemy, skillData.queenDamage);
                 TryApplyStun(enemy, skillData.queenStunChance, skillData.queenStunDuration);
                 Debug.Log($"<color=magenta>[퀸]</color> {enemy.name}에게 {skillData.queenDamage} 데미지");

@@ -1,32 +1,30 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 킹: 플레이어 오른쪽에서 스폰 → 전방으로 이동하며 데미지.
+/// 킹: 플레이어 오른쪽에서 스폰 → 오른쪽으로 이동하며 데미지.
+/// 플레이어 방향과 무관하게 항상 오른쪽 기준으로 동작한다.
 /// </summary>
 public class KingPiece : ChessPiece
 {
-    private static Collider2D[] hitBuffer = new Collider2D[16];
+    private static readonly Collider2D[] hitBuffer = new Collider2D[16];
 
-    public override void Execute(Transform target, Vector3 playerPosition)
+    public override void Execute(Transform target, Vector3 playerPosition, float facingDir = 1f)
     {
         StartCoroutine(KingRoutine(playerPosition));
     }
 
     private IEnumerator KingRoutine(Vector3 playerPos)
     {
-        // 플레이어 오른쪽에 스폰
-        Vector3 spawnPos = playerPos + Vector3.right * skillData.kingSpawnOffset;
-        transform.position = spawnPos;
+        transform.position = playerPos + Vector3.right * skillData.kingSpawnOffset;
 
-        // 전방(오른쪽)으로 이동
         Vector3 moveDir = Vector3.right;
         float distanceTraveled = 0f;
         float totalDistance = skillData.kingMoveDistance;
         float speed = skillData.kingMoveSpeed;
 
-        System.Collections.Generic.List<Collider2D> hitTargets =
-            new System.Collections.Generic.List<Collider2D>(16);
+        List<Collider2D> hitTargets = new List<Collider2D>(16);
 
         while (distanceTraveled < totalDistance)
         {
@@ -42,8 +40,9 @@ public class KingPiece : ChessPiece
 
                 hitTargets.Add(hitBuffer[i]);
                 GameObject enemy = hitBuffer[i].gameObject;
+
                 ApplyDamage(enemy, skillData.kingDamage);
-                Debug.Log($"<color=gold>[킹]</color> {enemy.name}에게 {skillData.kingDamage} 데미지");
+                Debug.Log($"<color=yellow>[킹]</color> {enemy.name}에게 {skillData.kingDamage} 데미지");
             }
 
             yield return null;

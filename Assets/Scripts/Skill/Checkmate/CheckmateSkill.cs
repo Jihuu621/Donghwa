@@ -32,6 +32,7 @@ public class CheckmateSkill : MonoBehaviour
     private CheckmateTargetTracker targetTracker;
     private MoveCounter moveCounter;
     private ChessPieceSpawner spawner;
+    private PlayerController playerController;
 
     private float trackingTimer;
 
@@ -45,6 +46,9 @@ public class CheckmateSkill : MonoBehaviour
         {
             poolManager = gameObject.AddComponent<ObjectPoolManager>();
         }
+
+        // 플레이어 방향 참조 캐시
+        playerController = GetComponent<PlayerController>();
 
         // 모듈 초기화
         moveCounter = new MoveCounter(skillData.movementThreshold);
@@ -132,16 +136,29 @@ public class CheckmateSkill : MonoBehaviour
 
     /// <summary>
     /// 스킬 해결: 무브 수에 따라 체스 기물 스폰.
+    /// 발동 시점의 플레이어 위치와 방향을 스냅샷으로 넘긴다.
     /// </summary>
     private void ResolveSkill()
     {
         int totalMoves = moveCounter.MoveCount;
         List<Transform> targets = targetTracker.TrackedTargets;
 
+        // 발동 시점 위치/방향 스냅샷 (이후 플레이어가 움직여도 영향 없음)
+        Vector3 snapshotPos = transform.position;
+        float facingDir = 1f;
+        if (playerController != null)
+        {
+            facingDir = playerController.FacingRight ? 1f : -1f;
+        }
+        else
+        {   
+            facingDir = transform.localScale.x > 0f ? 1f : -1f;
+        }
+
         Debug.Log($"<color=cyan>[체크메이트]</color> 해결! 총 무브: {totalMoves}");
 
-        // 기물 스폰
-        spawner.SpawnPieces(totalMoves, targets, transform.position);
+        // 기물 스폰 (스냅샷 위치/방향 전달)
+        spawner.SpawnPieces(totalMoves, targets, snapshotPos, facingDir);
 
         // 정리
         targetTracker.Clear();

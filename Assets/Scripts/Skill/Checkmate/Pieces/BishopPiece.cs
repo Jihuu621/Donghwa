@@ -9,7 +9,7 @@ public class BishopPiece : ChessPiece
     // NonAlloc 재사용 버퍼
     private static Collider2D[] chainBuffer = new Collider2D[16];
 
-    public override void Execute(Transform target, Vector3 playerPosition)
+    public override void Execute(Transform target, Vector3 playerPosition, float facingDir = 1f)
     {
         StartCoroutine(BishopRoutine(target));
     }

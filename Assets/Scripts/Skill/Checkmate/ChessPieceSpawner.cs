@@ -64,78 +64,91 @@ public class ChessPieceSpawner
 
     /// <summary>
     /// 무브 수와 타겟 목록에 따라 기물을 스폰한다.
+    /// facingDir: 플레이어가 바라보는 방향 (1 = 오른쪽, -1 = 왼쪽)
     /// </summary>
-    public void SpawnPieces(int moveCount, List<Transform> targets, Vector3 playerPosition)
+    public void SpawnPieces(int moveCount, List<Transform> targets, Vector3 playerPosition, float facingDir)
     {
         if (targets.Count == 0) return;
 
         if (moveCount >= skillData.queenKingMinMoves)
         {
-            SpawnQueenAndKing(playerPosition);
+            SpawnQueenAndKing(playerPosition, facingDir);
         }
         else if (moveCount >= skillData.rookMinMoves)
         {
-            SpawnRook(targets, playerPosition);
+            SpawnRook(targets, playerPosition, facingDir);
         }
         else if (moveCount >= skillData.bishopKnightMinMoves)
         {
-            SpawnBishopAndKnight(targets, playerPosition);
+            SpawnBishopOrKnight(targets, playerPosition, facingDir);
         }
         else if (moveCount >= skillData.pawnMinMoves)
         {
-            SpawnPawns(targets, playerPosition);
+            SpawnPawns(targets, playerPosition, facingDir);
         }
         else
         {
-            // 0 무브: 폰 1개라도 스폰
-            SpawnPawns(targets, playerPosition);
+            SpawnPawns(targets, playerPosition, facingDir);
         }
 
         Debug.Log($"<color=cyan>[체크메이트]</color> 무브 {moveCount} → 기물 스폰 완료");
     }
 
-    private void SpawnPawns(List<Transform> targets, Vector3 playerPos)
+    private void SpawnPawns(List<Transform> targets, Vector3 playerPos, float facingDir)
     {
         for (int i = 0; i < targets.Count; i++)
         {
             if (targets[i] == null) continue;
-            SpawnPiece(pawnData, targets[i], playerPos);
+            SpawnPiece(pawnData, targets[i], playerPos, facingDir);
         }
     }
 
-    private void SpawnBishopAndKnight(List<Transform> targets, Vector3 playerPos)
+    private void SpawnBishopOrKnight(List<Transform> targets, Vector3 playerPos, float facingDir)
     {
         Transform closest = FindClosestTarget(targets, playerPos);
 
-        SpawnPiece(bishopData, closest, playerPos);
-        SpawnPiece(knightData, closest, playerPos);
+        // 비숍 또는 나이트 중 하나만 랜덤 스폰
+        bool spawnBishop = Random.value < 0.5f;
+
+        if (spawnBishop)
+        {
+            SpawnPiece(bishopData, closest, playerPos, facingDir);
+            Debug.Log("<color=purple>[체크메이트]</color> 비숍 선택됨");
+        }
+        else
+        {
+            SpawnPiece(knightData, closest, playerPos, facingDir);
+            Debug.Log("<color=green>[체크메이트]</color> 나이트 선택됨");
+        }
     }
 
-    private void SpawnRook(List<Transform> targets, Vector3 playerPos)
+    private void SpawnRook(List<Transform> targets, Vector3 playerPos, float facingDir)
     {
         Transform closest = FindClosestTarget(targets, playerPos);
-        SpawnPiece(rookData, closest, playerPos);
+        SpawnPiece(rookData, closest, playerPos, facingDir);
     }
 
-    private void SpawnQueenAndKing(Vector3 playerPos)
+    private void SpawnQueenAndKing(Vector3 playerPos, float facingDir)
     {
-        // 퀸/킹은 플레이어 기준으로 스폰하므로 타겟 없이 실행
-        SpawnPiece(queenData, null, playerPos);
-        SpawnPiece(kingData, null, playerPos);
+        SpawnPiece(queenData, null, playerPos, facingDir);
+        SpawnPiece(kingData, null, playerPos, facingDir);
     }
 
-    private void SpawnPiece(ChessPieceData pieceData, Transform target, Vector3 playerPos)
+    private void SpawnPiece(ChessPieceData pieceData, Transform target, Vector3 playerPos, float facingDir)
     {
         if (pieceData == null || pieceData.prefab == null) return;
 
         Vector3 spawnPos = target != null ? target.position + Vector3.up * 3f : playerPos;
         GameObject obj = poolManager.Get(pieceData.prefab, spawnPos, Quaternion.identity);
 
+        // 풀에서 꺼낸 오브젝트의 부모를 해제하여 플레이어 이동에 종속되지 않게 함
+        obj.transform.SetParent(null);
+
         ChessPiece piece = obj.GetComponent<ChessPiece>();
         if (piece != null)
         {
             piece.Initialize(poolManager, skillData, enemyLayer);
-            piece.Execute(target, playerPos);
+            piece.Execute(target, playerPos, facingDir);
         }
     }
 

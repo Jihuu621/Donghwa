@@ -22,8 +22,9 @@ public abstract class ChessPiece : MonoBehaviour
 
     /// <summary>
     /// 기물의 공격 동작을 시작한다.
+    /// facingDir: 발동 시점 플레이어 방향 (1 = 오른쪽, -1 = 왼쪽)
     /// </summary>
-    public abstract void Execute(Transform target, Vector3 playerPosition);
+    public abstract void Execute(Transform target, Vector3 playerPosition, float facingDir = 1f);
 
     /// <summary>
     /// 대상에게 데미지를 적용한다. 기존 Health/ShieldEnemyManager 시스템과 호환.

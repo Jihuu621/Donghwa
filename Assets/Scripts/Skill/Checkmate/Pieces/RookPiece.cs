@@ -10,7 +10,7 @@ public class RookPiece : ChessPiece
     private static Collider2D[] scanBuffer = new Collider2D[32];
     private static Collider2D[] dashHitBuffer = new Collider2D[16];
 
-    public override void Execute(Transform target, Vector3 playerPosition)
+    public override void Execute(Transform target, Vector3 playerPosition, float facingDir = 1f)
     {
         StartCoroutine(RookRoutine(target));
     }

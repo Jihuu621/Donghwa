@@ -8,7 +8,7 @@ public class KnightPiece : ChessPiece
 {
     private static Collider2D[] jumpBuffer = new Collider2D[16];
 
-    public override void Execute(Transform target, Vector3 playerPosition)
+    public override void Execute(Transform target, Vector3 playerPosition, float facingDir = 1f)
     {
         StartCoroutine(KnightRoutine(target));
     }

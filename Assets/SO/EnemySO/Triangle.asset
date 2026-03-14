@@ -19,7 +19,7 @@ MonoBehaviour:
     \uBD80\uB978\uB2E4. \uBC11\uBCC0\uC744 \uC704\uB85C \uD574 \uB193\uACE0 \uAF2D\uC9D3\uC810\uC744
     \uC544\uB798\uB85C \uD574 \uB193\uC740 \uAC83(\u25BD)\uC740 \uC5ED\uC0BC\uAC01\uD615\uC774\uB77C\uACE0
     \uBD80\uB978\uB2E4."
-  MaxHP: 33
+  MaxHP: 330
   Damage: 5
   MoveSpeed: 8
   PatrolSpeed: 2

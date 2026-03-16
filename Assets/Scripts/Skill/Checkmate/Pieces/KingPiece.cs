@@ -17,6 +17,7 @@ public class KingPiece : ChessPiece
 
     private IEnumerator KingRoutine(Vector3 playerPos)
     {
+        // 발동 시점 플레이어 위치 기준 스폰 (이후 플레이어가 움직여도 영향 없음)
         transform.position = playerPos + Vector3.right * skillData.kingSpawnOffset;
 
         Vector3 moveDir = Vector3.right;
@@ -41,7 +42,11 @@ public class KingPiece : ChessPiece
                 hitTargets.Add(hitBuffer[i]);
                 GameObject enemy = hitBuffer[i].gameObject;
 
+                // 데미지 적용
                 ApplyDamage(enemy, skillData.kingDamage);
+                // 킹에게 스턴 효과가 설정되어 있다면 시도
+                TryApplyStun(enemy, skillData.kingStunChance, skillData.kingStunDuration);
+
                 Debug.Log($"<color=yellow>[킹]</color> {enemy.name}에게 {skillData.kingDamage} 데미지");
             }
 

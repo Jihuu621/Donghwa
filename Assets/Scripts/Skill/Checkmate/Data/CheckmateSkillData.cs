@@ -7,10 +7,10 @@ public class CheckmateSkillData : ScriptableObject
     public float detectionRadius = 8f;
     public float resolutionTime = 3f;
 
-    [Header("무브 임계값")]
+    [Header("이동 임계값")]
     public float movementThreshold = 2f; // Y미터마다 +1 무브
 
-    [Header("티어 구간")]
+    [Header("수치 구간")]
     public int pawnMinMoves = 1;
     public int pawnMaxMoves = 2;
     public int bishopKnightMinMoves = 3;
@@ -63,4 +63,8 @@ public class CheckmateSkillData : ScriptableObject
     public float kingMoveDistance = 8f;
     public float kingMoveSpeed = 14f;
     public float kingSpawnOffset = 2f;
+
+    [Header("King - Stun")]
+    public float kingStunChance = 0f;
+    public float kingStunDuration = 0f;
 }

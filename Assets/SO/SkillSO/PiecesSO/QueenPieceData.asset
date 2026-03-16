@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pieceName: Queen
   damage: 30
-  stunChance: 0.4
+  stunChance: 1
   stunDuration: 2
   moveDistance: 8
   moveSpeed: 14

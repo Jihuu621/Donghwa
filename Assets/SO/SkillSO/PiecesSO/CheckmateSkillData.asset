@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fbdad7e348a4db4baed424bb381d64b, type: 3}
+  m_Name: CheckmateSkillData
+  m_EditorClassIdentifier: 
+  detectionRadius: 8
+  resolutionTime: 3
+  movementThreshold: 2
+  pawnMinMoves: 1
+  pawnMaxMoves: 2
+  bishopKnightMinMoves: 3
+  bishopKnightMaxMoves: 4
+  rookMinMoves: 5
+  rookMaxMoves: 8
+  queenKingMinMoves: 9
+  pawnDamage: 30
+  pawnFallSpeed: 12
+  pawnSpawnHeight: 5
+  bishopDamage: 40
+  bishopChainRadius: 6
+  bishopChainYThreshold: 1.5
+  bishopChainDamage: 25
+  bishopMoveSpeed: 15
+  knightDamage: 35
+  knightStunChance: 0.4
+  knightStunDuration: 1.5
+  knightJumpRadius: 5
+  knightMaxJumps: 2
+  knightMoveSpeed: 18
+  rookDamage: 50
+  rookStunChance: 0.5
+  rookStunDuration: 2
+  rookDashDistance: 10
+  rookDashDamage: 35
+  rookDashStunChance: 0.3
+  rookDashStunDuration: 1
+  rookKnockback: 8
+  rookDashSpeed: 20
+  queenDamage: 60
+  queenMoveDistance: 8
+  queenStunChance: 0.6
+  queenStunDuration: 2
+  queenMoveSpeed: 14
+  queenSpawnOffset: 2
+  kingDamage: 80
+  kingMoveDistance: 8
+  kingMoveSpeed: 14
+  kingSpawnOffset: 2

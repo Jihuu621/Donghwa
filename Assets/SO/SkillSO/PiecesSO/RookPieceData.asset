@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pieceName: Rook
   damage: 25
-  stunChance: 0.5
+  stunChance: 1
   stunDuration: 1.5
   moveDistance: 8
   moveSpeed: 20

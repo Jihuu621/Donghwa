@@ -15,7 +15,7 @@ MonoBehaviour:
   pieceName: King
   damage: 35
   stunChance: 1
-  stunDuration: 2
+  stunDuration: 5
   moveDistance: 8
   moveSpeed: 14
   effectRadius: 1.2

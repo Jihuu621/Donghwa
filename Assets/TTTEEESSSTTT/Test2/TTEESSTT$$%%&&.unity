@@ -745,6 +745,14 @@ PrefabInstance:
       propertyPath: m_SpriteTilingProperty.oldSize.y
       value: 2.06
       objectReference: {fileID: 0}
+    - target: {fileID: 8860087288833687654, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
+      propertyPath: hitbox
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8860087288833687654, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
+      propertyPath: hitboxRenderer
+      value: 
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 3016332583438846750, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
     - {fileID: 2639302532675573010, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}

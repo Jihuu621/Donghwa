@@ -43,6 +43,7 @@ public class PlayerController : MonoBehaviour
 
     // 내부 변수들
     Rigidbody2D rb;
+    Animator anim;
     float horizontal;
     bool facingRight = true;
 
@@ -71,6 +72,7 @@ public class PlayerController : MonoBehaviour
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        anim = GetComponent<Animator>();
         rb.gravityScale = gravityScale;
         jumpsRemaining = extraJumps;
     }
@@ -112,6 +114,7 @@ public class PlayerController : MonoBehaviour
         {
             StartDash();
         }
+        UpdateAnimations();
 
         // 타이머
         if (isGrounded) coyoteTimer = coyoteTime; else coyoteTimer -= Time.deltaTime;
@@ -149,6 +152,23 @@ public class PlayerController : MonoBehaviour
         HandleWallSlide();
 
         if (dashCooldownTimer > 0f) dashCooldownTimer -= Time.fixedDeltaTime;
+    }
+
+    void UpdateAnimations()
+    {
+        float moveInput = Mathf.Abs(horizontal);
+        anim.SetFloat("Speed", moveInput);
+
+        anim.SetBool("isGrounded", isGrounded);
+
+        float yVel = rb.linearVelocity.y;
+        if (isGrounded)
+        {
+            yVel = 0;
+        }
+        anim.SetFloat("yVelocity", yVel);
+
+        anim.SetBool("isDashing", isDashing);
     }
 
     void CheckSurroundings()

@@ -5,71 +5,68 @@ using UnityEngine;
 public enum StatusKeyword
 {
     None,
-    Stun, 
+    Stun,
     Poison,
-    SpeedDown,
-
+    SpeedDown,    // 둔화 (Value: 0.3f면 30% 감소)
+    DamageAmp,    // 받피증 (Value: 0.5f면 50% 증가)
     Invincible,
 }
 
 public class EffectManager : MonoBehaviour
 {
-    // 다른 스크립트들이 구독할 수 있는 이벤트 <-- 이거 중요하,ㅁ
-    public event Action<StatusKeyword> OnStatusAdded;
-    public event Action<StatusKeyword> OnStatusRemoved;
+    // Action<StatusKeyword, float>으로 하면 키워드 + 수치까지 전달된대
+    public event Action<StatusKeyword, float> OnStatusAdded;
+    public event Action<StatusKeyword, float> OnStatusRemoved;
 
-    // 지금 있는거 관리
     private class ActiveEffect
     {
         public StatusKeyword Keyword;
         public float TimeRemaining;
+        public float Value; // <-- 여기에 퍼센트 저장
     }
 
-    // 현재 걸린 상태이상 리스트
     private List<ActiveEffect> activeEffects = new List<ActiveEffect>();
 
-
-    public void ApplyStatus(StatusKeyword keyword, float duration)
+    // 밸류 추가
+    public void ApplyStatus(StatusKeyword keyword, float duration, float value = 0)
     {
-        // 중복체크
         ActiveEffect existingEffect = activeEffects.Find(e => e.Keyword == keyword);
 
         if (existingEffect != null)
         {
-            // 중복이면 더 긴걸로 갱신 조지기
             existingEffect.TimeRemaining = Mathf.Max(existingEffect.TimeRemaining, duration);
+            // 수치가 더 높은 쪽으로 갱신
+            existingEffect.Value = Mathf.Max(existingEffect.Value, value);
         }
         else
         {
-            // 새로운 상태이상 추가
-            activeEffects.Add(new ActiveEffect { Keyword = keyword, TimeRemaining = duration });
-
-            // 상태이상 추가 이벤트
-            OnStatusAdded?.Invoke(keyword);
+            activeEffects.Add(new ActiveEffect { Keyword = keyword, TimeRemaining = duration, Value = value });
+            OnStatusAdded?.Invoke(keyword, value);
         }
     }
 
-    // 사장님 이거 있어요?
-    public bool HasStatus(StatusKeyword keyword)
+    // 사장님 이 키워드 수치 몇이에요?
+    public float GetStatusValue(StatusKeyword keyword)
     {
-        return activeEffects.Exists(e => e.Keyword == keyword);
+        var effect = activeEffects.Find(e => e.Keyword == keyword);
+        return effect != null ? effect.Value : 0;
     }
+
+    public bool HasStatus(StatusKeyword keyword) => activeEffects.Exists(e => e.Keyword == keyword);
 
     void Update()
     {
-        // 역순 순회 -> 타이머감소
         for (int i = activeEffects.Count - 1; i >= 0; i--)
         {
             activeEffects[i].TimeRemaining -= Time.deltaTime;
 
-            // 시간 다 되면 제거
             if (activeEffects[i].TimeRemaining <= 0)
             {
                 StatusKeyword expiredKeyword = activeEffects[i].Keyword;
+                float expiredValue = activeEffects[i].Value; // 삭제될 때 수치 기억
                 activeEffects.RemoveAt(i);
 
-                // 상태이상 끝 이벤트
-                OnStatusRemoved?.Invoke(expiredKeyword);
+                OnStatusRemoved?.Invoke(expiredKeyword, expiredValue);
             }
         }
     }

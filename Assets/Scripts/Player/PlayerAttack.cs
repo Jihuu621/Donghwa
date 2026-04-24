@@ -93,8 +93,8 @@ public class PlayerAttack : MonoBehaviour
     {
         currentDamage = damage;
 
-        if (animator)
-            animator.SetTrigger("Attack" + attackType);
+        //if (animator)
+            //animator.SetTrigger("Attack" + attackType);  공격애니메이션 생기면 사용
 
         yield return new WaitForSeconds(0.1f);
 

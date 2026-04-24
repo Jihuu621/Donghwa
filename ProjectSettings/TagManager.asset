@@ -19,7 +19,7 @@ TagManager:
   - Player
   - Chess
   - Rope
-  - 
+  - Interactable
   - 
   - 
   - 
@@ -47,3 +47,4 @@ TagManager:
     locked: 0
   m_RenderingLayers:
   - Default
+  m_MigratedRenderPipelines: []

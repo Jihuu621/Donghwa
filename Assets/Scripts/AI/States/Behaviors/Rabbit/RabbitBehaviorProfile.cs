@@ -25,6 +25,9 @@ public class RabbitBehaviorProfile : MonoBehaviour, IEnemyIdleBehavior, IEnemyPa
 
     [Header("Animation")]
     public string IdleAnimation = "Rabbit_Idle";
+    public string AttackAnimation = "Rabbit_Attack";
+    // 트리거 방식용 이름 (Animator에 같은 이름의 Trigger 파라미터를 추가)
+    public string AttackTrigger = "Attack";
 
     int _patrolDirection = 1;
     Vector2 _startPosition;
@@ -307,6 +310,20 @@ public class RabbitBehaviorProfile : MonoBehaviour, IEnemyIdleBehavior, IEnemyPa
             rb.linearVelocity = new Vector2(_baseVx, _initialVy);
         }
 
+        // 변경: 애니메이터 트리거 사용
+        if (enemy.TryGetComponent<Animator>(out var anim))
+        {
+            if (!string.IsNullOrEmpty(AttackTrigger) && anim.HasParameterOfType(AttackTrigger, AnimatorControllerParameterType.Trigger))
+            {
+                anim.SetTrigger(AttackTrigger);
+            }
+            else if (!string.IsNullOrEmpty(AttackAnimation))
+            {
+                // 폴백: 트리거가 없으면 기존 방식으로 즉시 재생
+                anim.Play(AttackAnimation);
+            }
+        }
+
         _isLunging = true;
         _lungeTimer = 0f;
     }
@@ -396,5 +413,19 @@ public class RabbitBehaviorProfile : MonoBehaviour, IEnemyIdleBehavior, IEnemyPa
         {
             rb.linearVelocity = Vector2.zero;
         }
+    }
+}
+
+// 헬퍼: Animator에 파라미터 존재 확인을 위한 확장메서드(파일 끝에 추가)
+public static class AnimatorExtensions
+{
+    public static bool HasParameterOfType(this Animator animator, string paramName, AnimatorControllerParameterType type)
+    {
+        if (animator == null || string.IsNullOrEmpty(paramName)) return false;
+        foreach (var p in animator.parameters)
+        {
+            if (p.type == type && p.name == paramName) return true;
+        }
+        return false;
     }
 }

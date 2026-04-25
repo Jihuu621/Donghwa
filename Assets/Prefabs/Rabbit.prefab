@@ -17,6 +17,8 @@ GameObject:
   - component: {fileID: 5079881036491402206}
   - component: {fileID: 1983324549569784086}
   - component: {fileID: -8419931021699543351}
+  - component: {fileID: 8440359955110063}
+  - component: {fileID: 537770935482551996}
   m_Layer: 6
   m_Name: Rabbit
   m_TagString: Enemy
@@ -34,13 +36,14 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 2.44, y: -2.51, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 2}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &5225789172051253248
 SpriteRenderer:
+  serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -59,6 +62,8 @@ SpriteRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -80,9 +85,11 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 2
+  m_MaskInteraction: 0
   m_Sprite: {fileID: -2752584300984662343, guid: 2b805bf6fdab7844e93916e694122ac5, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -92,7 +99,6 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
-  m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!114 &6887815029551968486
 MonoBehaviour:
@@ -326,3 +332,45 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 53a01aa4180d1de49aadc31e9d82a9dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &8440359955110063
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3374976332121162450}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5ecb4c95aa3b404b8e8752d0032ddb8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RabbitBehaviorProfile
+  PatrolRadius: 3
+  HopForce: 2
+  HopInterval: 0.6
+  AttackPrepTime: 0.5
+  LungeDuration: 0.4
+  LungeDistanceMultiplier: 1.6
+  LungeAccel: 1.2
+  LungeArcLowFactor: 0.5
+  DetectRange: 10
+  ChaseRange: 15
+  AttackRange: 1.5
+  PatrolMoveTimeMin: 1
+  PatrolMoveTimeMax: 2.5
+  IdleAnimation: Rabbit_Idle
+--- !u!114 &537770935482551996
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3374976332121162450}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf1d7dd2afcb0c5418a6179c6b26c17f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyStateManager
+  _idleBehavior: {fileID: 8440359955110063}
+  _patrolBehavior: {fileID: 8440359955110063}
+  _chaseBehavior: {fileID: 8440359955110063}
+  _attackBehavior: {fileID: 8440359955110063}

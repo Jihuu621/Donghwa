@@ -158,4 +158,4 @@ MonoBehaviour:
   segmentPrefab: {fileID: 4792048555934252279, guid: 027ee734447cee541bb7010b6f3746d0, type: 3}
   segmentLength: 0.5
   minSegmentCount: 4
-  maxSegmentCount: 200
+  maxSegmentCount: 400

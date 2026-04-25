@@ -25,8 +25,8 @@ public class CentralPull : MonoBehaviour
         line = GetComponent<LineRenderer>();
         if (line == null) line = gameObject.AddComponent<LineRenderer>();
 
-        line.startWidth = 0.05f;
-        line.endWidth = 0.05f;
+        line.startWidth = 0.109f;
+        line.endWidth = 0.109f;
         line.material = new Material(Shader.Find("Sprites/Default"));
         line.positionCount = 2;
 

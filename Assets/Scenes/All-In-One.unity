@@ -2393,6 +2393,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 108621338733315259, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
+      propertyPath: jumpForce
+      value: 16
+      objectReference: {fileID: 0}
     - target: {fileID: 2639302532675573010, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
       propertyPath: forwardDistance
       value: 3.2

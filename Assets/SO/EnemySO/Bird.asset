@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   EnemyName: "\uC0C8"
   EnemyDescription: "\uC0C8"
-  MaxHP: 25
+  MaxHP: 45
   Damage: 10
   MoveSpeed: 8
   PatrolSpeed: 2

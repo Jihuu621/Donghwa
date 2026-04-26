@@ -425,11 +425,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hitbox: {fileID: 5334133533804395451}
   hitboxRenderer: {fileID: 6230326503581805872}
-  comboDelay: 0.3
   showHitboxDebug: 1
+  logComboDebug: 1
   damageA: 10
   damageB: 10
   damageC: 15
+  attack1StateName: Attack1
+  attack2StateName: Attack2
+  attack3StateName: Attack3
+  attackSafetyTimeout: 1.2
 --- !u!114 &1405898839669298776
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -604,7 +608,7 @@ Transform:
   m_GameObject: {fileID: 6112633433587099258}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.25, y: 0.285, z: 0}
+  m_LocalPosition: {x: 1.25, y: -0.248, z: 0}
   m_LocalScale: {x: 1.523, y: 1.523, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

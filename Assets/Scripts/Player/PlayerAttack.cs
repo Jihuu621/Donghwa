@@ -231,7 +231,5 @@ public class PlayerAttack : MonoBehaviour
         {
             noShieldEnemy.TakeDamage(finalDamage);
         }
-
     }
-
 }

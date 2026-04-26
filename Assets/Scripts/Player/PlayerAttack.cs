@@ -7,18 +7,25 @@ public class PlayerAttack : MonoBehaviour
     [Header("공격 설정")]
     public BoxCollider2D hitbox;
     public SpriteRenderer hitboxRenderer;
-    public float comboDelay = 0.6f;
 
     [Header("디버그")]
     public bool showHitboxDebug = false;
+    public bool logComboDebug = true;
 
     [Header("데미지 설정")]
     public int damageA = 10;
     public int damageB = 10;
-    public int damageC =    15;
+    public int damageC = 15;
+
+    [Header("애니메이터 상태 이름")]
+    public string attack1StateName = "Attack1";
+    public string attack2StateName = "Attack2";
+    public string attack3StateName = "Attack3";
+
+    [Header("안전장치")]
+    public float attackSafetyTimeout = 1.2f;
 
     private int comboStep = 0;
-    private float comboTimer = 0f;
     private bool isAttacking = false;
     private bool canNextCombo = false;
     private bool comboQueued = false;
@@ -26,6 +33,7 @@ public class PlayerAttack : MonoBehaviour
 
     private Animator animator;
     private PlayerParry parry;
+    private Coroutine safetyRoutine;
 
     void Start()
     {
@@ -33,8 +41,7 @@ public class PlayerAttack : MonoBehaviour
         parry = GetComponent<PlayerParry>();
 
         hitbox.enabled = false;
-        if (hitboxRenderer != null)
-            hitboxRenderer.enabled = false;
+        if (hitboxRenderer != null) hitboxRenderer.enabled = false;
 
         Physics2D.IgnoreCollision(GetComponent<Collider2D>(), hitbox, true);
     }
@@ -43,28 +50,101 @@ public class PlayerAttack : MonoBehaviour
     {
         if (parry != null && parry.IsStunned) return;
 
-        if (GetComponent<RainbowFlushSkill>() != null &&
-            GetComponent<RainbowFlushSkill>().IsSkill() != RainbowFlushSkill.SkillState.Ready)
-            return;
-
         if (Input.GetMouseButtonDown(0))
         {
             if (!isAttacking)
+            {
                 Attack();
-            else if (canNextCombo)
+            }
+            else
+            {
+                // 윈도우가 아직 안 열렸어도 미리 예약해두기 (인풋 버퍼)
                 comboQueued = true;
+                if (logComboDebug) Debug.Log("[PlayerAttack] 콤보 예약됨 (선입력 버퍼)");
+            }
+        }
+    }
+
+    void Attack()
+    {
+        isAttacking = true;
+        canNextCombo = false;
+        comboQueued = false;
+
+        comboStep++;
+        if (comboStep > 3) comboStep = 1;
+
+        if (comboStep == 1) currentDamage = damageA;
+        else if (comboStep == 2) currentDamage = damageB;
+        else currentDamage = damageC;
+
+        PlayCurrentAttackAnimation();
+
+        if (logComboDebug) Debug.Log($"[PlayerAttack] Attack 시작 step={comboStep}");
+
+        // 안전장치: 일정 시간 내에 AE_EndAttack이 호출되지 않으면 강제 종료
+        if (safetyRoutine != null) StopCoroutine(safetyRoutine);
+        safetyRoutine = StartCoroutine(SafetyTimeout());
+    }
+
+    void PlayCurrentAttackAnimation()
+    {
+        if (animator == null) return;
+
+        string stateName = attack1StateName;
+        if (comboStep == 2) stateName = attack2StateName;
+        else if (comboStep == 3) stateName = attack3StateName;
+
+        int stateHash = Animator.StringToHash(stateName);
+        if (!animator.HasState(0, stateHash))
+        {
+            Debug.LogWarning($"[PlayerAttack] Animator State 없음: {stateName}");
+            return;
         }
 
-        if (!isAttacking && comboStep > 0)
+        animator.Play(stateHash, 0, 0f);
+    }
+
+    private IEnumerator SafetyTimeout()
+    {
+        yield return new WaitForSeconds(attackSafetyTimeout);
+        if (isAttacking)
         {
-            comboTimer += Time.deltaTime;
-            if (comboTimer > comboDelay)
-                ResetCombo();
+            Debug.LogWarning("[PlayerAttack] AE_EndAttack 이벤트가 호출되지 않아 강제 리셋합니다. 애니메이션 클립의 이벤트를 확인하세요.");
+            if (comboQueued) Attack();
+            else ResetCombo();
         }
+    }
+
+    // =========================================================
+    //  애니메이션 이벤트 (각 클립의 특정 프레임에서 호출)
+    // =========================================================
+
+    // 타격 발생 (2컷, 6컷, 14컷 위치)
+    public void AE_TriggerHitbox()
+    {
+        StartCoroutine(HitboxActiveRoutine());
+    }
+
+    private IEnumerator HitboxActiveRoutine()
+    {
+        hitbox.enabled = true;
+        if (hitboxRenderer != null && showHitboxDebug)
+        {
+            DOTween.Kill(hitboxRenderer);
+            Color debugColor = (comboStep == 1) ? Color.red : (comboStep == 2) ? Color.green : Color.blue;
+            hitboxRenderer.color = debugColor;
+            hitboxRenderer.enabled = true;
+            hitboxRenderer.DOFade(0f, 0.3f);
+        }
+        yield return new WaitForSeconds(0.1f);
+        hitbox.enabled = false;
     }
 
     float GetDamageMultiplier()
     {
+        if (parry == null) return 1f; // 안전장치: parry 컴포넌트가 없을 경우 기본 배율 1배
+
         float g = parry.parryHitGauge;
 
         if (g >= 500) return 1.35f;
@@ -75,90 +155,41 @@ public class PlayerAttack : MonoBehaviour
         return 1f;
     }
 
-    void Attack()
+    // 다음 콤보 입력을 허용하는 타이밍 (휘두른 직후)
+    public void AE_OpenComboWindow()
     {
-        if (isAttacking) return;
-        isAttacking = true;
-        comboQueued = false;
-
-        switch (comboStep)
-        {
-            case 0: StartCoroutine(DoAttack("A", damageA)); break;
-            case 1: StartCoroutine(DoAttack("B", damageB)); break;
-            case 2: StartCoroutine(DoAttack("C", damageC)); break;
-        }
-    }
-
-    IEnumerator DoAttack(string attackType, int damage)
-    {
-        currentDamage = damage;
-
-        //if (animator)
-            //animator.SetTrigger("Attack" + attackType);  공격애니메이션 생기면 사용
-
-        yield return new WaitForSeconds(0.1f);
-
-        if (hitboxRenderer != null)
-        {
-            if (showHitboxDebug)
-            {
-                DOTween.Kill(hitboxRenderer);
-                if (attackType == "A") hitboxRenderer.color = new Color(1f, 0f, 0f, 1f);
-                else if (attackType == "B") hitboxRenderer.color = new Color(0f, 1f, 0f, 1f);
-                else hitboxRenderer.color = new Color(0f, 0.5f, 1f, 1f);
-
-                hitboxRenderer.enabled = true;
-                hitboxRenderer.DOFade(0f, 0.4f);
-            }
-            else hitboxRenderer.enabled = false;
-        }
-
-        hitbox.enabled = true;
-
-        yield return new WaitForSeconds(0.15f);
-
-        hitbox.enabled = false;
-
         canNextCombo = true;
-
-        float nextComboWindow = 0.3f;
-        float elapsed = 0f;
-
-        while (elapsed < nextComboWindow)
-        {
-            if (comboQueued)
-            {
-                comboStep++;
-                if (comboStep > 2) comboStep = 0;
-
-                canNextCombo = false;
-                comboQueued = false;
-                isAttacking = false;
-
-                Attack();
-                yield break;
-            }
-
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        canNextCombo = false;
-        isAttacking = false;
-
-        comboStep++;
-        if (comboStep > 2) comboStep = 0;
-
-        comboTimer = 0f;
+        if (logComboDebug) Debug.Log("[PlayerAttack] 콤보 윈도우 열림");
     }
 
-    void ResetCombo()
+    // 애니메이션 종료 시점 (클립 끝)
+    public void AE_EndAttack()
+    {
+        if (logComboDebug) Debug.Log($"[PlayerAttack] AE_EndAttack 호출 (queued={comboQueued})");
+
+        if (safetyRoutine != null)
+        {
+            StopCoroutine(safetyRoutine);
+            safetyRoutine = null;
+        }
+
+        if (comboQueued)
+        {
+            Attack();
+        }
+        else
+        {
+            ResetCombo();
+        }
+    }
+
+    public void ResetCombo()
     {
         comboStep = 0;
-        comboTimer = 0f;
         isAttacking = false;
         canNextCombo = false;
         comboQueued = false;
+        if (animator != null) animator.SetInteger("ComboStep", 0);
     }
 
     private void OnTriggerEnter2D(Collider2D other)

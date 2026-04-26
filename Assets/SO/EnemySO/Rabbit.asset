@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Rabbit
   m_EditorClassIdentifier: 
   EnemyName: "\uD1A0\uB07C"
-  EnemyDescription: "\uC0B0\uD1A0\uB07C\uD1A0\uB07C\uC57C"
+  EnemyDescription: "\uC0B0\uD1A0\uB07C\uD1A0\uB07C\uC57C \uD64D\uC131\uC6D0\uC22D\uC774\n\n"
   MaxHP: 33
   Damage: 5
   MoveSpeed: 3

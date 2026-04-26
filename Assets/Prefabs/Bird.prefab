@@ -10,13 +10,13 @@ GameObject:
   m_Component:
   - component: {fileID: 5455129299669575252}
   - component: {fileID: 104741723725077185}
-  - component: {fileID: 2020210339234151562}
   - component: {fileID: 4051733321213296041}
   - component: {fileID: 4791847817445990341}
   - component: {fileID: 5611787942102178310}
   - component: {fileID: 6418052537024027479}
   - component: {fileID: 8548892511545520777}
   - component: {fileID: 2911650018911429178}
+  - component: {fileID: 7202721727885188744}
   m_Layer: 0
   m_Name: Bird
   m_TagString: Untagged
@@ -98,41 +98,6 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!114 &2020210339234151562
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3749083590399408572}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 24ffd68c77098dd42978a06a1a486b33, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BirdBehaviorProfile
-  PatrolRadius: 3
-  AttackPrepTime: 0.5
-  LungeDuration: 0.4
-  LungeDistanceMultiplierFar: 3
-  LungeTargetYOffset: -0.5
-  LungeAccel: 1.2
-  LungeArcLowFactor: 0.5
-  LungeOvershoot: 4
-  LungeArcHeight: -6
-  DetectRange: 10
-  ChaseRange: 15
-  AttackRange: 10
-  PatrolMoveTimeMin: 1
-  PatrolMoveTimeMax: 2.5
-  HoverAmplitude: 0.6
-  HoverFrequency: 1.2
-  HoverDriftSpeed: 0.6
-  HoverY: 0
-  HoverReturnSpeed: 4
-  HoverMaxVy: 3
-  HoverHeightAboveTarget: 3
-  AttackStandoffDistance: 5
-  MaxDiveSpeed: 9
 --- !u!70 &4051733321213296041
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -163,7 +128,7 @@ CapsuleCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
@@ -249,7 +214,42 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf1d7dd2afcb0c5418a6179c6b26c17f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyStateManager
-  _idleBehavior: {fileID: 2020210339234151562}
-  _patrolBehavior: {fileID: 2020210339234151562}
-  _chaseBehavior: {fileID: 2020210339234151562}
-  _attackBehavior: {fileID: 2020210339234151562}
+  _idleBehavior: {fileID: 0}
+  _patrolBehavior: {fileID: 0}
+  _chaseBehavior: {fileID: 0}
+  _attackBehavior: {fileID: 0}
+--- !u!114 &7202721727885188744
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3749083590399408572}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24ffd68c77098dd42978a06a1a486b33, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BirdBehaviorProfile
+  PatrolRadius: 3
+  AttackPrepTime: 1
+  LungeDuration: 0.34
+  LungeDistanceMultiplierFar: 3
+  LungeTargetYOffset: -0.5
+  LungeAccel: 1.2
+  LungeArcLowFactor: 0.5
+  LungeOvershoot: 4
+  LungeArcHeight: -20
+  DetectRange: 10
+  ChaseRange: 15
+  AttackRange: 6.16
+  PatrolMoveTimeMin: 1
+  PatrolMoveTimeMax: 2.5
+  HoverAmplitude: 0.6
+  HoverFrequency: 1.2
+  HoverDriftSpeed: 0.6
+  HoverY: -3.185001
+  HoverReturnSpeed: 10.62
+  HoverMaxVy: 8.44
+  HoverHeightAboveTarget: 2.44
+  AttackStandoffDistance: 5
+  MaxDiveSpeed: 15

@@ -29,6 +29,10 @@ public class RabbitBehaviorProfile : MonoBehaviour, IEnemyIdleBehavior, IEnemyPa
     // 트리거 방식용 이름 (Animator에 같은 이름의 Trigger 파라미터를 추가)
     public string AttackTrigger = "Attack";
 
+    [Header("Facing")]
+    // 원본 스프라이트가 기본적으로 오른쪽을 보고 있으면 true, 왼쪽이면 false
+    public bool DefaultFacingRight = false;
+
     int _patrolDirection = 1;
     Vector2 _startPosition;
 
@@ -59,6 +63,20 @@ public class RabbitBehaviorProfile : MonoBehaviour, IEnemyIdleBehavior, IEnemyPa
         if (_patrolDirection == 0) _patrolDirection = 1;
     }
 
+    void SetFacing(EnemyStateManager enemy, bool faceRight)
+    {
+        Vector3 scale = enemy.transform.localScale;
+        float absX = Mathf.Abs(scale.x);
+        if (absX < 0.0001f)
+        {
+            absX = 1f;
+        }
+
+        bool usePositiveX = DefaultFacingRight ? faceRight : !faceRight;
+        scale.x = usePositiveX ? absX : -absX;
+        enemy.transform.localScale = scale;
+    }
+
     void IEnemyIdleBehavior.EnterState(EnemyStateManager enemy)
     {
         if (enemy.TryGetComponent<Animator>(out var anim) && !string.IsNullOrEmpty(IdleAnimation))
@@ -75,10 +93,7 @@ public class RabbitBehaviorProfile : MonoBehaviour, IEnemyIdleBehavior, IEnemyPa
         _idleTimer = 0f;
 
         _patrolDirection = (Random.value < 0.5f) ? -1 : 1;
-        if (enemy.TryGetComponent<SpriteRenderer>(out var sprite))
-        {
-            sprite.flipX = (_patrolDirection > 0);
-        }
+        SetFacing(enemy, _patrolDirection > 0);
 
         StopMovement(enemy);
     }
@@ -149,10 +164,7 @@ public class RabbitBehaviorProfile : MonoBehaviour, IEnemyIdleBehavior, IEnemyPa
             TryHop(rb, ref _patrolHopTimer);
         }
 
-        if (enemy.TryGetComponent<SpriteRenderer>(out var sprite))
-        {
-            sprite.flipX = (_patrolDirection > 0);
-        }
+        SetFacing(enemy, _patrolDirection > 0);
 
         _patrolMoveTimer += Time.deltaTime;
         if (_patrolMoveTimer >= _patrolMoveTime)
@@ -166,7 +178,7 @@ public class RabbitBehaviorProfile : MonoBehaviour, IEnemyIdleBehavior, IEnemyPa
     {
         if (enemy.TryGetComponent<SpriteRenderer>(out var sr))
         {
-            sr.color = Color.red;   
+            sr.color = Color.red;
         }
 
         _chasePlayer = GameObject.FindGameObjectWithTag("Player")?.transform;
@@ -213,10 +225,7 @@ public class RabbitBehaviorProfile : MonoBehaviour, IEnemyIdleBehavior, IEnemyPa
             TryHop(rb, ref _chaseHopTimer);
         }
 
-        if (enemy.TryGetComponent<SpriteRenderer>(out var sprite))
-        {
-            sprite.flipX = (moveDir > 0);
-        }
+        SetFacing(enemy, moveDir > 0);
     }
 
     void IEnemyAttackBehavior.EnterState(EnemyStateManager enemy)
@@ -264,10 +273,7 @@ public class RabbitBehaviorProfile : MonoBehaviour, IEnemyIdleBehavior, IEnemyPa
             _prepTimer += Time.deltaTime;
             StopMovement(enemy);
 
-            if (enemy.TryGetComponent<SpriteRenderer>(out var sr))
-            {
-                sr.flipX = (_attackPlayer.position.x > enemy.transform.position.x);
-            }
+            SetFacing(enemy, _attackPlayer.position.x > enemy.transform.position.x);
 
             TryHop(enemy, ref _attackHopTimer);
 
@@ -310,7 +316,6 @@ public class RabbitBehaviorProfile : MonoBehaviour, IEnemyIdleBehavior, IEnemyPa
             rb.linearVelocity = new Vector2(_baseVx, _initialVy);
         }
 
-        // 변경: 애니메이터 트리거 사용
         if (enemy.TryGetComponent<Animator>(out var anim))
         {
             if (!string.IsNullOrEmpty(AttackTrigger) && anim.HasParameterOfType(AttackTrigger, AnimatorControllerParameterType.Trigger))
@@ -319,7 +324,6 @@ public class RabbitBehaviorProfile : MonoBehaviour, IEnemyIdleBehavior, IEnemyPa
             }
             else if (!string.IsNullOrEmpty(AttackAnimation))
             {
-                // 폴백: 트리거가 없으면 기존 방식으로 즉시 재생
                 anim.Play(AttackAnimation);
             }
         }
@@ -416,7 +420,6 @@ public class RabbitBehaviorProfile : MonoBehaviour, IEnemyIdleBehavior, IEnemyPa
     }
 }
 
-// 헬퍼: Animator에 파라미터 존재 확인을 위한 확장메서드(파일 끝에 추가)
 public static class AnimatorExtensions
 {
     public static bool HasParameterOfType(this Animator animator, string paramName, AnimatorControllerParameterType type)

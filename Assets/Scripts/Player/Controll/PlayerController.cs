@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(Collider2D))]
 public class PlayerController : MonoBehaviour
 {
     [Header("이동")]
@@ -43,6 +44,7 @@ public class PlayerController : MonoBehaviour
 
     // 내부 변수들
     Rigidbody2D rb;
+    Collider2D playerCollider;
     Animator anim;
     float horizontal;
     bool facingRight = true;
@@ -72,6 +74,7 @@ public class PlayerController : MonoBehaviour
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        playerCollider = GetComponent<Collider2D>();
         anim = GetComponent<Animator>();
         rb.gravityScale = gravityScale;
         jumpsRemaining = extraJumps;
@@ -122,6 +125,14 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
+        bool jumpingUp = rb.linearVelocity.y > 0.05f;
+        RopeBridge[] bridges = FindObjectsOfType<RopeBridge>();
+
+        for (int i = 0; i < bridges.Length; i++)
+        {
+            bridges[i].SetPassThrough(playerCollider, jumpingUp);
+        }
+
         PlayerParry parry = GetComponent<PlayerParry>();
         if (parry != null && parry.IsStunned)
         {

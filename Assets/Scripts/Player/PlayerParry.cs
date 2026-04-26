@@ -153,9 +153,10 @@ public class PlayerParry : MonoBehaviour
         if (isParryTime)
         {
             StartCoroutine (DebugParry());
+            CamaraShake.Instance.Shake();
             Debug.Log("<color=lime>[플레이어] 완벽한 패링 성공! 데미지 0 / 패링 히트 +30 / 게이지 +5</color>");
             currentGauge = Mathf.Min(currentGauge + parryReward, maxGauge);
-
+            
             parryHitGauge = Mathf.Min(parryHitGauge + parryHitGain, maxParryHitGauge);
 
             //패링 히트 타이머 초기화

@@ -357,7 +357,7 @@ MonoBehaviour:
   groundCheckRadius: 0.08
   groundLayer:
     serializedVersion: 2
-    m_Bits: 8
+    m_Bits: 1544
   wallCheck: {fileID: 0}
   wallCheckDistance: 0.2
   coyoteTime: 0.12

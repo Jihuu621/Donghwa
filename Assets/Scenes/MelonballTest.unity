@@ -4111,11 +4111,13 @@ MonoBehaviour:
   LungeDuration: 0.4
   LungeDistanceMultiplierFar: 3
   LungeTargetYOffset: -0.5
-  LungeAccel: 1.2
+  LungeAccel: 0.3
   LungeArcLowFactor: 0.5
+  LungeOvershoot: 4
+  LungeArcHeight: -6
   DetectRange: 10
   ChaseRange: 15
-  AttackRange: 10
+  AttackRange: 8
   PatrolMoveTimeMin: 1
   PatrolMoveTimeMax: 2.5
   HoverAmplitude: 0.6
@@ -4124,6 +4126,9 @@ MonoBehaviour:
   HoverY: 0
   HoverReturnSpeed: 4
   HoverMaxVy: 3
+  HoverHeightAboveTarget: 3
+  AttackStandoffDistance: 5
+  MaxDiveSpeed: 12
 --- !u!212 &2096621998
 SpriteRenderer:
   serializedVersion: 2
@@ -4192,7 +4197,7 @@ Transform:
   m_GameObject: {fileID: 2096621996}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 19.25, y: 1.92, z: 0}
+  m_LocalPosition: {x: 6.94, y: 1.92, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4228,7 +4233,7 @@ CapsuleCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0

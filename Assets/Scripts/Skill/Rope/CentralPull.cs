@@ -1,7 +1,7 @@
 using Unity.VisualScripting;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody2D))] // 리지드바디가 없으면 자동으로 추가
+[RequireComponent(typeof(Rigidbody2D))]
 public class CentralPull : MonoBehaviour
 {
     private Rigidbody2D rb;
@@ -12,16 +12,14 @@ public class CentralPull : MonoBehaviour
 
     public void Setup(Vector2 target, GameObject effect)
     {
-        // 1. Rigidbody 설정
         rb = GetComponent<Rigidbody2D>();
         rb.bodyType = RigidbodyType2D.Dynamic;
         rb.gravityScale = 0f;
         rb.linearVelocity = Vector2.zero;
-        rb.mass = 1f; // 질량 통일
+        rb.mass = 1f;
 
         targetPoint = target;
 
-        // 2. LineRenderer 에러 방지 (없으면 생성)
         line = GetComponent<LineRenderer>();
         if (line == null) line = gameObject.AddComponent<LineRenderer>();
 
@@ -37,7 +35,6 @@ public class CentralPull : MonoBehaviour
     {
         if (!isInitialized || isFixed) return;
 
-        // 실 위치 갱신
         line.SetPosition(0, transform.position);
         line.SetPosition(1, targetPoint);
     }
@@ -46,33 +43,72 @@ public class CentralPull : MonoBehaviour
     {
         if (!isInitialized || isFixed) return;
 
-        // 중앙으로 당기는 속도 조절
         Vector2 dir = (targetPoint - (Vector2)transform.position).normalized;
-        rb.linearVelocity = dir * 15f;
+        rb.linearVelocity = dir * 20f; // 속도를 살짝 높여서 타격감을 더 줬습니다 (기존 15f)
     }
 
-    // [중요] 실제 충돌 시 호출되는 함수
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if (isFixed) return;
 
-        // 상대방도 끌려오는 중인 물체라면 (또는 특정 태그를 확인해도 됨)
+        // 적과 충돌했을 때
+        if (collision.gameObject.CompareTag("Enemy"))
+        {
+            // 이미 찌그러져서 충돌체가 꺼진 적이면 무시하고 통과
+            if (collision.gameObject.GetComponent<Collider2D>().enabled == false) return;
+
+            CrushEnemy(collision.gameObject);
+            return; // 적을 뚫고 계속 중앙으로 날아가도록 return
+        }
+
+        // 중앙에서 반대편 물체와 만났을 때 고정
         if (collision.gameObject.GetComponent<CentralPull>() != null)
         {
             FixPosition();
         }
     }
 
+    // [핵심 기능] 적을 압사시키는 연출
+    void CrushEnemy(GameObject target)
+    {
+        // 1. 물체들이 멈추지 않고 통과할 수 있게 적의 충돌체 무력화
+        Collider2D col = target.GetComponent<Collider2D>();
+        if (col != null) col.enabled = false;
+
+        // 2. 적이 밀려나지 않게 고정
+        Rigidbody2D targetRb = target.GetComponent<Rigidbody2D>();
+        if (targetRb != null)
+        {
+            targetRb.linearVelocity = Vector2.zero;
+            targetRb.bodyType = RigidbodyType2D.Static;
+        }
+
+        // 3. 날아가는 방향을 기반으로 적을 납작하게 찌그러뜨림
+        Vector3 scale = target.transform.localScale;
+        Vector2 dir = rb.linearVelocity.normalized;
+
+        if (Mathf.Abs(dir.x) > Mathf.Abs(dir.y))
+        {
+            // 좌우로 날아와서 부딪힌 경우 (X축 축소, Y축 팽창)
+            target.transform.localScale = new Vector3(scale.x * 0.2f, scale.y * 1.5f, scale.z);
+        }
+        else
+        {
+            // 위아래로 날아와서 부딪힌 경우 (Y축 축소, X축 팽창)
+            target.transform.localScale = new Vector3(scale.x * 1.5f, scale.y * 0.2f, scale.z);
+        }
+
+        // 4. 찌그러진 잔해를 0.5초 동안 보여준 뒤 완전 삭제
+        Destroy(target, 0.5f);
+    }
+
     void FixPosition()
     {
         isFixed = true;
         rb.linearVelocity = Vector2.zero;
-        rb.bodyType = RigidbodyType2D.Static; // 완전히 고정시켜서 발판으로 만듦
+        rb.bodyType = RigidbodyType2D.Static;
 
-        // 시각적 실 제거
         if (line != null) Destroy(line);
-
-        // 스크립트 기능 종료
         Destroy(this, 0.1f);
     }
 }

@@ -433,25 +433,16 @@ public class BirdBehaviorProfile : MonoBehaviour, IEnemyIdleBehavior, IEnemyPatr
     {
         if (_attackPlayer == null) return;
 
-        var playerHealth = _attackPlayer.GetComponent<Health>();
-        if (playerHealth == null) return;
-
-        float damage = 1f;
-        if (TryGetComponent<EnemyDataManager>(out var data))
+        IDamageable target = _attackPlayer.GetComponent<IDamageable>();
+        if (target != null)
         {
-            damage = data.EnemyData.Damage;
-        }
+            float damage = 1f;
+            if (TryGetComponent<EnemyDataManager>(out var data))
+            {
+                damage = data.EnemyData.Damage;
+            }
 
-        float finalDamage = damage;
-        var parry = _attackPlayer.GetComponent<PlayerParry>();
-        if (parry != null)
-        {
-            finalDamage = parry.OnHit(damage);
-        }
-
-        if (finalDamage > 0f)
-        {
-            playerHealth.TakeDamage(finalDamage);
+            target.TakeDamage(damage, gameObject);
         }
     }
 

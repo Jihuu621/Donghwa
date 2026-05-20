@@ -27,37 +27,22 @@ public abstract class ChessPiece : MonoBehaviour
     public abstract void Execute(Transform target, Vector3 playerPosition, float facingDir = 1f);
 
     /// <summary>
-    /// 대상에게 데미지를 적용한다. 기존 Health/ShieldEnemyManager 시스템과 호환.
+    /// 대상에게 데미지를 적용한다. (IDamageable 연동)
     /// </summary>
     protected void ApplyDamage(GameObject target, float damage)
     {
         if (target == null) return;
 
-        // 데미지 증폭 처리
         float ampMult = 1f;
         var amp = target.GetComponent<EnemyDamageAmpData>();
         if (amp != null) ampMult = amp.Multiplier;
 
-        int finalDamage = Mathf.RoundToInt(damage * ampMult);
+        float finalDamage = damage * ampMult;
 
-        // 방패 적 처리
-        var shield = target.GetComponentInChildren<ShieldController>();
-        if (shield != null && !shield.IsBroken)
+        IDamageable damageable = target.GetComponentInParent<IDamageable>();
+        if (damageable != null)
         {
-            shield.TakeShieldDamage(finalDamage);
-            return;
-        }
-
-        var shieldEnemy = target.GetComponentInParent<ShieldEnemyManager>();
-        if (shieldEnemy != null)
-        {
-            shieldEnemy.TakeDamage(finalDamage);
-        }
-
-        var health = target.GetComponent<Health>();
-        if (health != null)
-        {
-            health.TakeDamage(finalDamage);
+            damageable.TakeDamage(finalDamage, gameObject);
         }
     }
 

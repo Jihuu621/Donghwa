@@ -61,26 +61,10 @@ public class AttackState : IEnemyState
         {
             Debug.Log("<color=#ff6666>[적] 공격 시도!</color>");
 
-            Health playerHealth = _player.GetComponent<Health>();
-            if (playerHealth != null)
+            IDamageable target = _player.GetComponent<IDamageable>();
+            if (target != null)
             {
-                float finalDamage = _damage;
-
-                PlayerParry parry = _player.GetComponent<PlayerParry>();
-                if (parry != null)
-                {
-                    finalDamage = parry.OnHit(_damage);
-                }
-
-                if (finalDamage > 0f)
-                {
-                    playerHealth.TakeDamage(finalDamage);
-                    Debug.Log($"<color=red>[적] 플레이어 피해: {finalDamage}</color>");
-                }
-                else
-                {
-                    Debug.Log("<color=green>[적] 공격이 무효화되었습니다! (피해 0)</color>");
-                }
+                target.TakeDamage(_damage, enemy.gameObject);
             }
 
             _timer = 0f;

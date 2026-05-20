@@ -43,7 +43,6 @@ public class CardProjectile : MonoBehaviour
         UpdateVisuals();
     }
 
-    // RainbowFlushSkill에서 판정된 족보 수치를 조커에게 주입
     public void SetExplosionData(float r, float d, float dur, float amt)
     {
         expRadius = r;
@@ -91,7 +90,6 @@ public class CardProjectile : MonoBehaviour
             isFiring = true;
         });
 
-        // 빗나갔을 때를 대비한 자동 파괴
         Destroy(gameObject, 3f);
     }
 
@@ -115,7 +113,6 @@ public class CardProjectile : MonoBehaviour
     {
         if (!isFiring) return;
 
-        // 적 또는 지형에 닿았을 때
         if (collision.CompareTag("Enemy") || collision.CompareTag("Untagged"))
         {
             if (mySuit == Suit.Joker)
@@ -125,7 +122,6 @@ public class CardProjectile : MonoBehaviour
             else
             {
                 if (collision.CompareTag("Enemy"))
-                    // 일반 카드는 단일 대상에게 데미지 (기본 20)
                     ApplySingleDamage(collision, 20f);
                 Destroy(gameObject);
             }
@@ -134,7 +130,6 @@ public class CardProjectile : MonoBehaviour
 
     private void ExecuteJokerExplosion()
     {
-        // 싱글톤 매니저 호출
         if (ExplosionManager.Instance != null)
         {
             ExplosionManager.Instance.CreateExplosion(
@@ -155,26 +150,16 @@ public class CardProjectile : MonoBehaviour
 
     private void ApplySingleDamage(Collider2D other, float baseDamage)
     {
-        // ExplosionManager가 없을 때를 대비하거나 일반 카드 처리를 위해 유지
         float ampMult = 1f;
         var amp = other.GetComponent<EnemyDamageAmpData>();
         if (amp != null) ampMult = amp.Multiplier;
 
-        int finalDamage = Mathf.RoundToInt(baseDamage * ampMult);
+        float finalDamage = baseDamage * ampMult;
 
-        // 1. 방패 처리
-        var shield = other.GetComponentInChildren<ShieldController>();
-        if (shield != null && !shield.IsBroken)
+        IDamageable damageable = other.GetComponentInParent<IDamageable>();
+        if (damageable != null)
         {
-            shield.TakeShieldDamage(finalDamage);
-            return;
+            damageable.TakeDamage(finalDamage, gameObject);
         }
-
-        // 2. 적 체력 처리
-        var sEnemy = other.GetComponentInParent<ShieldEnemyManager>();
-        if (sEnemy != null) sEnemy.TakeDamage(finalDamage);
-
-        var health = other.GetComponent<Health>();
-        if (health != null) health.TakeDamage(finalDamage);
     }
 }

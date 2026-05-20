@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class ShieldEnemyManager : MonoBehaviour
+public class ShieldEnemyManager : MonoBehaviour, IDamageable
 {
     public Health EnemyHealth;
     public ShieldController Shield;
@@ -14,15 +14,19 @@ public class ShieldEnemyManager : MonoBehaviour
         Shield = GetComponentInChildren<ShieldController>();
     }
 
-    public void TakeDamage(int damage)
+    // IDamageable 인터페이스 구현부
+    public void TakeDamage(float damage) => TakeDamage(damage, null);
+
+    public void TakeDamage(float damage, GameObject source)
     {
         if (!IsShieldBroken)
         {
-            Debug.Log("[쉴드 에너미] 방패로 피해 차단");
+            Shield.TakeShieldDamage(Mathf.RoundToInt(damage));
+            Debug.Log($"[쉴드 에너미] 방패로 피해 차단! 방패 피해: {damage}");
             return;
         }
 
-        EnemyHealth.TakeDamage(damage);
-        Debug.Log($"[쉴드 에너미] 체력 피해 {damage}");
+        EnemyHealth.ReduceHP(damage);
+        Debug.Log($"[쉴드 에너미] 본체 체력 피해: {damage}");
     }
 }

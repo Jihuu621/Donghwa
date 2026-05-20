@@ -9870,7 +9870,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 3444055190754818141, guid: cbfc6dd05035c3340be39935c9745427, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -11888,23 +11889,6 @@ MonoBehaviour:
   watchModel: {fileID: 280769232}
   handTransform: {fileID: 1903764443}
   chainPhysics: {fileID: 1903764462}
---- !u!114 &1903764475
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 561956818}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f7757aa8b9719e24287cbba7d358b7c9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RainbowFlushSkill
-  cardPrefab: {fileID: 0}
-  rotateSpeed: 200
-  targetRadius: 1.5
-  lerpSpeed: 5
-  currentState: 4
 --- !u!1 &2007391368
 GameObject:
   m_ObjectHideFlags: 0
@@ -12609,9 +12593,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5329500642152477051, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1903764461}
-    - targetCorrespondingSourceObject: {fileID: 5329500642152477051, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1903764475}
   m_SourcePrefab: {fileID: 100100000, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

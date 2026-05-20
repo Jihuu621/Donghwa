@@ -52,31 +52,17 @@ public class EnemyStateManager : MonoBehaviour
         float dist = Vector2.Distance(transform.position, player.transform.position);
         if (dist > range) return;
 
-        Health playerHealth = player.GetComponent<Health>();
-        PlayerParry parry = player.GetComponent<PlayerParry>();
-
-        float damage = 10f;
-        if (TryGetComponent<EnemyDataManager>(out var data))
+        // 결합도가 낮아진 코드: 플레이어의 IDamageable만 찾아서 데미지를 던집니다.
+        IDamageable target = player.GetComponent<IDamageable>();
+        if (target != null)
         {
-            damage = data.EnemyData.Damage;
-        }
-
-        if (parry != null)
-        {
-            float finalDamage = parry.OnHit(damage);
-
-            if (finalDamage <= 0)
+            float damage = 10f;
+            if (TryGetComponent<EnemyDataManager>(out var data))
             {
-                Debug.Log("<color=green>[패링 성공]</color> 공격이 무효화되었습니다.");
+                damage = data.EnemyData.Damage;
             }
-            else
-            {
-                playerHealth?.TakeDamage(finalDamage);
-            }
-        }
-        else
-        {
-            playerHealth?.TakeDamage(damage);
+
+            target.TakeDamage(damage, gameObject);
         }
     }
 

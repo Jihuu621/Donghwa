@@ -1,10 +1,11 @@
 using UnityEngine;
+
 public class FallingPlatform : MonoBehaviour
 {
     [Header("데미지 설정")]
     [SerializeField] private float damageAmount = 50f;
-    [SerializeField] private float minFallSpeed = 0.8f;       // 최소 이동 속력 기준
-    [SerializeField] private float minRotationSpeed = 100f;  // 최소 회전 속도 기준
+    [SerializeField] private float minFallSpeed = 0.8f;
+    [SerializeField] private float minRotationSpeed = 100f;
 
     private Rigidbody2D rb;
     private bool isFunctional = true;
@@ -20,14 +21,15 @@ public class FallingPlatform : MonoBehaviour
 
         float currentSpeed = rb.linearVelocity.magnitude;
         float currentRotationSpeed = Mathf.Abs(rb.angularVelocity);
+
         if (currentSpeed > minFallSpeed || currentRotationSpeed > minRotationSpeed)
         {
             if (collision.gameObject.CompareTag("Enemy"))
             {
-                Health health = collision.gameObject.GetComponent<Health>();
-                if (health != null)
+                IDamageable damageable = collision.gameObject.GetComponentInParent<IDamageable>();
+                if (damageable != null)
                 {
-                    health.TakeDamage(damageAmount);
+                    damageable.TakeDamage(damageAmount, gameObject);
                     Debug.Log($"{collision.gameObject.name} 처치!");
                 }
                 DisablePlatformFunction();

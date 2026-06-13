@@ -246,6 +246,8 @@ GameObject:
   - component: {fileID: 8178702185658095679}
   - component: {fileID: 945863595221553089}
   - component: {fileID: 5910262405562988698}
+  - component: {fileID: 1502939091984489508}
+  - component: {fileID: 6596310842572885575}
   m_Layer: 7
   m_Name: Player
   m_TagString: Player
@@ -271,6 +273,7 @@ Transform:
   - {fileID: 5855081192039848485}
   - {fileID: 7280963062229273515}
   - {fileID: 5971206440736881427}
+  - {fileID: 6236815705829189838}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3978259510126088006
@@ -409,8 +412,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHP: 100
-  currentHP: 0
-  enemyData: {fileID: 0}
 --- !u!114 &8860087288833687654
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -581,6 +582,73 @@ CapsuleCollider2D:
   m_Offset: {x: -0.014134884, y: -0.25443208}
   m_Size: {x: 0.59992886, y: 2.0511353}
   m_Direction: 0
+--- !u!114 &1502939091984489508
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5329500642152477051}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4915ead57eaa2a94e9fcd5965cbe393c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SimplePool
+  prefab: {fileID: 7138994431252705474, guid: 845bf8043cb41c54886d5a7f7202d1b0, type: 3}
+  initialPoolSize: 10
+--- !u!114 &6596310842572885575
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5329500642152477051}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bde3ab3650682a46ab972cf658e71b9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeedleSkillManager
+  cooldown: 3
+  throwSpeed: 25
+  needleDamage: 15
+  stunDuration: 1.5
+  stunValue: 1
+  knockbackForce: 3
+  threadDamage: 30
+  firePoint: {fileID: 6236815705829189838}
+  needlePool: {fileID: 1502939091984489508}
+  threadTrapPrefab: {fileID: 7913861884901470611, guid: 6a607b69f64bb984182d3bda66f71309, type: 3}
+--- !u!1 &6099017345400449487
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6236815705829189838}
+  m_Layer: 7
+  m_Name: FirePoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6236815705829189838
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6099017345400449487}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.601, y: 0.405, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5589571593274590829}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6112633433587099258
 GameObject:
   m_ObjectHideFlags: 0

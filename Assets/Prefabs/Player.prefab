@@ -243,7 +243,6 @@ GameObject:
   - component: {fileID: 1405898839669298776}
   - component: {fileID: 66412813307373279}
   - component: {fileID: 1455634622923983538}
-  - component: {fileID: 8178702185658095679}
   - component: {fileID: 945863595221553089}
   - component: {fileID: 5910262405562988698}
   - component: {fileID: 1502939091984489508}
@@ -500,29 +499,6 @@ MonoBehaviour:
   ampDuration: 3
   damageAmpMultiplier: 1.5
   drawGizmo: 1
---- !u!114 &8178702185658095679
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5329500642152477051}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cdff8521d8b10b44d8a0bd3cc27c4bb0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  skillData: {fileID: 11400000, guid: 2b3c3526c290aa04bbd90401a1417bb9, type: 2}
-  pawnData: {fileID: 11400000, guid: bd518ee59efb2bb48bb9125f52567f39, type: 2}
-  bishopData: {fileID: 11400000, guid: 00f5a27e9abbae84391d47561475d6b3, type: 2}
-  knightData: {fileID: 11400000, guid: 71f255e6cdcfd1042b0816a4b0d09415, type: 2}
-  rookData: {fileID: 11400000, guid: 425031a8c4a095b4cb154eee0621db88, type: 2}
-  queenData: {fileID: 11400000, guid: 3631daa6d070d7246aa6e69176864bd9, type: 2}
-  kingData: {fileID: 11400000, guid: 06b3cc534cbeec44588acfc7124bd34e, type: 2}
-  enemyLayer:
-    serializedVersion: 2
-    m_Bits: 64
-  currentState: 0
 --- !u!95 &945863595221553089
 Animator:
   serializedVersion: 7

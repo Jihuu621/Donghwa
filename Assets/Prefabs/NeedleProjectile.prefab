@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 5751656542221299217}
   - component: {fileID: 575708742100719003}
   - component: {fileID: 1778610905342891992}
-  m_Layer: 0
+  m_Layer: 12
   m_Name: NeedleProjectile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -170,3 +170,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88deea4d4eee25945b5db1db8c195981, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeedleProjectile
+  maxFlyingGravity: 2.5
+  gravityIncreaseRate: 4

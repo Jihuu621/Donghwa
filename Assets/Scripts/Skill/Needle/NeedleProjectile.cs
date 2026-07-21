@@ -138,10 +138,14 @@ public class NeedleProjectile : MonoBehaviour
         col.enabled = false;
     }
 
-    public void SetAsTrapNode()
+    public void SetAsTrapNode(float duration)
     {
         currentState = NeedleState.UsedInTrap;
-        if (despawnCoroutine != null) StopCoroutine(despawnCoroutine);
+
+        if (despawnCoroutine != null)
+            StopCoroutine(despawnCoroutine);
+
+        despawnCoroutine = StartCoroutine(DespawnTimer(duration));
     }
 
     private void ResetDespawnTimer(float time)

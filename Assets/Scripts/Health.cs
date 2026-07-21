@@ -25,7 +25,7 @@ public class Health : MonoBehaviour, IDamageable
         isDead = false;
         OnHealthChanged?.Invoke(CurrentHP, maxHP);
     }
-    public void TakeDamage(float damage) => TakeDamage(damage, null);
+    public void TakeDamage(float damage) => TakeDamage(damage, null);s
     public void TakeDamage(float damage, GameObject source)
     {
         if (isDead) return;

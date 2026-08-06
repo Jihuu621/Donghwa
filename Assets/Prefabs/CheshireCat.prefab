@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 1932847501932847507}
   - component: {fileID: 1932847501932847508}
   - component: {fileID: 1932847501932847509}
+  - component: {fileID: 1932847501932847510}
   m_Layer: 6
   m_Name: CheshireCat
   m_TagString: Enemy
@@ -87,12 +88,12 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 2
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -2752584300984662343, guid: 2b805bf6fdab7844e93916e694122ac5, type: 3}
-  m_Color: {r: 1, g: 0.35, b: 0.65, a: 1}
+  m_Sprite: {fileID: 6214457495015110012, guid: 0f9fdfc0160411d429042954f2d9e1fd, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 22.4, y: 22.4}
+  m_Size: {x: 1.0926828, y: 1.0926828}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -131,8 +132,8 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_Size: {x: 1.45, y: 1.6}
+  m_Offset: {x: 0, y: 0.14}
+  m_Size: {x: 0.84, y: 0.0001}
   m_Direction: 0
 --- !u!50 &1932847501932847505
 Rigidbody2D:
@@ -212,7 +213,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CheshireCatAI
   idleDuration: 0.75
-  smokeDuration: 0.3
+  smokeDuration: 0.45
   recoveryDuration: 0.8
   teleportCountMin: 3
   teleportCountMax: 6
@@ -235,3 +236,26 @@ MonoBehaviour:
   scratchDashDuration: 0.35
   scratchDashSpeed: 20
   smokeTint: {r: 0.45, g: 0.45, b: 0.45, a: 0.3}
+  idleSprite: {fileID: 6214457495015110012, guid: 0f9fdfc0160411d429042954f2d9e1fd, type: 3}
+--- !u!95 &1932847501932847510
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1932847501932847501}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 2adcadb5d76c6704189bc1fddf6c19dd, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0

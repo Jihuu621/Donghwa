@@ -3,11 +3,16 @@ using UnityEngine.Serialization;
 
 public class CheshireCatAI : EnemyAIBase
 {
-    public enum State { None, Idle, SmokeEnter, Teleport, RangedAttack, ScratchWindup, ScratchDash, Recovery, Stunned }
+    private const float TeleportAnimationLength = 0.3f;
+    private static readonly int IdleAnimationState = Animator.StringToHash("Base Layer.Cat_Idle");
+    private static readonly int TeleportAnimationState = Animator.StringToHash("Base Layer.Cat_Attack1");
+    private static readonly int TeleportAppearAnimationState = Animator.StringToHash("Base Layer.Cat_TeleportAppear");
+
+    public enum State { None, Idle, SmokeEnter, Teleport, SmokeAppear, RangedAttack, ScratchWindup, ScratchDash, Recovery, Stunned }
 
     [Header("Pattern")]
     [SerializeField, Min(0f)] private float idleDuration = 0.75f;
-    [SerializeField, Min(0f)] private float smokeDuration = 0.3f;
+    [SerializeField, Min(0f)] private float smokeDuration = 0.45f;
     [SerializeField, Min(0f)] private float recoveryDuration = 0.8f;
     [SerializeField, Min(1)] private int teleportCountMin = 3;
     [SerializeField, Min(1)] private int teleportCountMax = 6;
@@ -40,6 +45,7 @@ public class CheshireCatAI : EnemyAIBase
 
     [Header("Smoke Visual")]
     [SerializeField] private Color smokeTint = new Color(0.45f, 0.45f, 0.45f, 0.3f);
+    [SerializeField] private Sprite idleSprite;
 
     public State CurrentState { get; private set; }
     public bool IsSmokeForm { get; private set; }
@@ -59,6 +65,7 @@ public class CheshireCatAI : EnemyAIBase
         _normalColor = Fsm.Sr != null ? Fsm.Sr.color : Color.white;
         _fallbackTeleportOrigin = Fsm.Rb != null ? Fsm.Rb.position : (Vector2)transform.position;
         _bodyCollider = GetComponent<Collider2D>();
+        PlayIdleAnimation();
         ChangeState(State.Idle);
     }
 
@@ -69,6 +76,7 @@ public class CheshireCatAI : EnemyAIBase
             case State.Idle: UpdateIdle(); break;
             case State.SmokeEnter: UpdateSmokeEnter(); break;
             case State.Teleport: UpdateTeleport(); break;
+            case State.SmokeAppear: UpdateSmokeAppear(); break;
             case State.RangedAttack: UpdateRangedAttack(); break;
             case State.ScratchWindup: UpdateScratchWindup(); break;
             case State.ScratchDash: UpdateScratchDash(); break;
@@ -108,6 +116,12 @@ public class CheshireCatAI : EnemyAIBase
             case State.SmokeEnter:
                 SetSmokeForm(true);
                 Fsm.StopAllMovement();
+                PlaySmokeAnimation(TeleportAnimationState);
+                break;
+            case State.SmokeAppear:
+                SetSmokeForm(true);
+                Fsm.StopAllMovement();
+                PlaySmokeAnimation(TeleportAppearAnimationState);
                 break;
             case State.RangedAttack:
             case State.ScratchWindup:
@@ -138,6 +152,15 @@ public class CheshireCatAI : EnemyAIBase
     private void UpdateTeleport()
     {
         TeleportToRandomMapPosition();
+        ChangeState(State.SmokeAppear);
+    }
+
+    private void UpdateSmokeAppear()
+    {
+        _stateTimer += Time.deltaTime;
+        if (_stateTimer < smokeDuration) return;
+
+        PlayIdleAnimation();
         SetSmokeForm(false);
         Vector2 bossPosition = Fsm.Rb != null ? Fsm.Rb.position : (Vector2)transform.position;
         bool playerIsClose = Fsm.Player != null && Vector2.Distance(bossPosition, Fsm.Player.position) <= meleeTriggerRange;
@@ -275,7 +298,22 @@ public class CheshireCatAI : EnemyAIBase
     {
         IsSmokeForm = enabled;
         if (Fsm.Sr == null) return;
-        Fsm.Sr.color = enabled ? smokeTint : _normalColor;
+        Fsm.Sr.color = enabled && Fsm.Anim == null ? smokeTint : _normalColor;
+    }
+
+    private void PlaySmokeAnimation(int stateHash)
+    {
+        if (Fsm.Anim == null) return;
+        Fsm.Anim.speed = smokeDuration > 0f ? TeleportAnimationLength / smokeDuration : 1f;
+        Fsm.Anim.Play(stateHash, 0, 0f);
+    }
+
+    private void PlayIdleAnimation()
+    {
+        if (Fsm.Sr != null && idleSprite != null) Fsm.Sr.sprite = idleSprite;
+        if (Fsm.Anim == null) return;
+        Fsm.Anim.speed = 1f;
+        Fsm.Anim.Play(IdleAnimationState, 0, 0f);
     }
 
     private static Vector2 Rotate(Vector2 direction, float degrees)

@@ -545,6 +545,28 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: Cat_Attack1_8
+      rect:
+        serializedVersion: 2
+        x: 4480
+        y: 0
+        width: 2240
+        height: 2240
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 760e7c3534d5cebb0800000000000000
+      internalID: -4905443350363512729
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     customData: 
     physicsShape: []
@@ -569,6 +591,7 @@ TextureImporter:
       Cat_Attack1_5: -8459680929634672593
       Cat_Attack1_6: -515624476529544508
       Cat_Attack1_7: 8821466841270760592
+      Cat_Attack1_8: -4905443350363512729
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

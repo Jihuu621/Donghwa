@@ -108,11 +108,10 @@ public class NeedleProjectile : MonoBehaviour
             effectManager.ApplyStatus(StatusKeyword.Stun, stunDuration, stunValue);
         }
 
-        EnemyFSM fsm = enemyObj.GetComponentInParent<EnemyFSM>();
-        if (fsm != null && fsm.CurrentState == fsm.Attack)
+        EnemyAIBase setup = enemyObj.GetComponentInParent<EnemyAIBase>();
+        if (setup != null && setup.TryStun(stunDuration))
         {
             Debug.Log("<color=orange>[바늘] 적 공격 취소!</color>");
-            fsm.TransitionTo(fsm.Idle);
         }
 
         transform.SetParent(enemyObj.transform);

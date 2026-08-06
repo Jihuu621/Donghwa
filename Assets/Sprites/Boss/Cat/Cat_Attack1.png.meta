@@ -1,0 +1,576 @@
+fileFormatVersion: 2
+guid: e023d011e76a243498053afa12f7a5f5
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 6214457495015110012
+    second: Cat_Attack1_0
+  - first:
+      213: -2085928667075791556
+    second: Cat_Attack1_1
+  - first:
+      213: 1584538770899048256
+    second: Cat_Attack1_2
+  - first:
+      213: 2864569294284700868
+    second: Cat_Attack1_3
+  - first:
+      213: 7033677212503866295
+    second: Cat_Attack1_4
+  - first:
+      213: -8459680929634672593
+    second: Cat_Attack1_5
+  - first:
+      213: -515624476529544508
+    second: Cat_Attack1_6
+  - first:
+      213: 8821466841270760592
+    second: Cat_Attack1_7
+  - first:
+      213: -4905443350363512729
+    second: Cat_Attack1_8
+  - first:
+      213: -8402803851010810095
+    second: Cat_Attack1_9
+  - first:
+      213: 222717829070944813
+    second: Cat_Attack1_10
+  - first:
+      213: 3948272120135259808
+    second: Cat_Attack1_11
+  - first:
+      213: 3790584281621795870
+    second: Cat_Attack1_12
+  - first:
+      213: 1951523664994554026
+    second: Cat_Attack1_13
+  - first:
+      213: -4480089000724002463
+    second: Cat_Attack1_14
+  - first:
+      213: 2328919247540696916
+    second: Cat_Attack1_15
+  - first:
+      213: -8825748702261560826
+    second: Cat_Attack1_16
+  - first:
+      213: -4473216584982252162
+    second: Cat_Attack1_17
+  - first:
+      213: -5762002634948002027
+    second: Cat_Attack1_18
+  - first:
+      213: -725766223949763464
+    second: Cat_Attack1_19
+  - first:
+      213: -7216128613934795124
+    second: Cat_Attack1_20
+  - first:
+      213: -4444643053069245525
+    second: Cat_Attack1_21
+  - first:
+      213: -8778171152426667915
+    second: Cat_Attack1_22
+  - first:
+      213: 1448019191349004132
+    second: Cat_Attack1_23
+  - first:
+      213: -4602001244139172443
+    second: Cat_Attack1_24
+  - first:
+      213: -2766901202237989263
+    second: Cat_Attack1_25
+  - first:
+      213: 6435811919595177943
+    second: Cat_Attack1_26
+  - first:
+      213: 364490304547182345
+    second: Cat_Attack1_27
+  - first:
+      213: -5018930433854592354
+    second: Cat_Attack1_28
+  - first:
+      213: -8634077013734849607
+    second: Cat_Attack1_29
+  - first:
+      213: 7274887515104768226
+    second: Cat_Attack1_30
+  - first:
+      213: -2445931127622995621
+    second: Cat_Attack1_31
+  - first:
+      213: 2030104067539329727
+    second: Cat_Attack1_32
+  - first:
+      213: -4462085704633379955
+    second: Cat_Attack1_33
+  - first:
+      213: -6992234544184686068
+    second: Cat_Attack1_34
+  - first:
+      213: 3946008823967687363
+    second: Cat_Attack1_35
+  - first:
+      213: 6996703619570184688
+    second: Cat_Attack1_36
+  - first:
+      213: 1171609198995353888
+    second: Cat_Attack1_37
+  - first:
+      213: 5112084353815436316
+    second: Cat_Attack1_38
+  - first:
+      213: 1415514198480503760
+    second: Cat_Attack1_39
+  - first:
+      213: 7426889268575226830
+    second: Cat_Attack1_40
+  - first:
+      213: 3033033686357359749
+    second: Cat_Attack1_41
+  - first:
+      213: 3668013945961116921
+    second: Cat_Attack1_42
+  - first:
+      213: -8931437573562134979
+    second: Cat_Attack1_43
+  - first:
+      213: -1979643960941978532
+    second: Cat_Attack1_44
+  - first:
+      213: -4032066541431475355
+    second: Cat_Attack1_45
+  - first:
+      213: -7618295694935821801
+    second: Cat_Attack1_46
+  - first:
+      213: 547337463264954350
+    second: Cat_Attack1_47
+  - first:
+      213: -4443574085235833248
+    second: Cat_Attack1_48
+  - first:
+      213: 4898672319467558857
+    second: Cat_Attack1_49
+  - first:
+      213: -138722328656912025
+    second: Cat_Attack1_50
+  - first:
+      213: -4535308294283973314
+    second: Cat_Attack1_51
+  - first:
+      213: 6251369724344661153
+    second: Cat_Attack1_52
+  - first:
+      213: -2362868977039608056
+    second: Cat_Attack1_53
+  - first:
+      213: -8822418044071341571
+    second: Cat_Attack1_54
+  - first:
+      213: -1034994300969700226
+    second: Cat_Attack1_55
+  - first:
+      213: -7138122587289605627
+    second: Cat_Attack1_56
+  - first:
+      213: -4735102653405046715
+    second: Cat_Attack1_57
+  - first:
+      213: 7484465060657127383
+    second: Cat_Attack1_58
+  - first:
+      213: 713075649697934163
+    second: Cat_Attack1_59
+  - first:
+      213: 5991527685812245176
+    second: Cat_Attack1_60
+  - first:
+      213: -4817777879225350492
+    second: Cat_Attack1_61
+  - first:
+      213: -8887134965754627964
+    second: Cat_Attack1_62
+  - first:
+      213: 2524040336300877413
+    second: Cat_Attack1_63
+  - first:
+      213: 8332543489179410209
+    second: Cat_Attack1_64
+  - first:
+      213: -476497684289171383
+    second: Cat_Attack1_65
+  - first:
+      213: -3442197257538305061
+    second: Cat_Attack1_66
+  - first:
+      213: 1062905329917317210
+    second: Cat_Attack1_67
+  - first:
+      213: 4493333159270585982
+    second: Cat_Attack1_68
+  - first:
+      213: 8673560798750188497
+    second: Cat_Attack1_69
+  - first:
+      213: -4017683747427656821
+    second: Cat_Attack1_70
+  - first:
+      213: 4817108266627523738
+    second: Cat_Attack1_71
+  - first:
+      213: -3776383649773073868
+    second: Cat_Attack1_72
+  - first:
+      213: -7300028708223630733
+    second: Cat_Attack1_73
+  - first:
+      213: 7322124094486120822
+    second: Cat_Attack1_74
+  - first:
+      213: 3424197441473649583
+    second: Cat_Attack1_75
+  - first:
+      213: -1641924118113272377
+    second: Cat_Attack1_76
+  - first:
+      213: 7333027703742233640
+    second: Cat_Attack1_77
+  - first:
+      213: -3090152190658321481
+    second: Cat_Attack1_78
+  - first:
+      213: -4060651136691806319
+    second: Cat_Attack1_79
+  - first:
+      213: 8645734249976513246
+    second: Cat_Attack1_80
+  - first:
+      213: 6925528794186844270
+    second: Cat_Attack1_81
+  - first:
+      213: 5665832041438802194
+    second: Cat_Attack1_82
+  - first:
+      213: 6488200293547696755
+    second: Cat_Attack1_83
+  - first:
+      213: -314007021798414220
+    second: Cat_Attack1_84
+  - first:
+      213: -8961571305123906733
+    second: Cat_Attack1_85
+  - first:
+      213: 2101481975310913204
+    second: Cat_Attack1_86
+  - first:
+      213: 833669150948383470
+    second: Cat_Attack1_87
+  - first:
+      213: 4874154858558535250
+    second: Cat_Attack1_88
+  - first:
+      213: -8777115425547165807
+    second: Cat_Attack1_89
+  - first:
+      213: -2294436571734655207
+    second: Cat_Attack1_90
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 2000
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 8192
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Cat_Attack1_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 4480
+        width: 2240
+        height: 2240
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c75b3268a203e3650800000000000000
+      internalID: 6214457495015110012
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cat_Attack1_1
+      rect:
+        serializedVersion: 2
+        x: 2240
+        y: 4480
+        width: 2240
+        height: 2240
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c35b424ddea4d03e0800000000000000
+      internalID: -2085928667075791556
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cat_Attack1_2
+      rect:
+        serializedVersion: 2
+        x: 4480
+        y: 4480
+        width: 2240
+        height: 2240
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 047954ced996df510800000000000000
+      internalID: 1584538770899048256
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cat_Attack1_3
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 2240
+        width: 2240
+        height: 2240
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4ccb454989ef0c720800000000000000
+      internalID: 2864569294284700868
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cat_Attack1_4
+      rect:
+        serializedVersion: 2
+        x: 2240
+        y: 2240
+        width: 2240
+        height: 2240
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7bb7d04a824ac9160800000000000000
+      internalID: 7033677212503866295
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cat_Attack1_5
+      rect:
+        serializedVersion: 2
+        x: 4480
+        y: 2240
+        width: 2240
+        height: 2240
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f20aafb040d299a80800000000000000
+      internalID: -8459680929634672593
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cat_Attack1_6
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 2240
+        height: 2240
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4c2b5fe354228d8f0800000000000000
+      internalID: -515624476529544508
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cat_Attack1_7
+      rect:
+        serializedVersion: 2
+        x: 2240
+        y: 0
+        width: 2240
+        height: 2240
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 094b4df9a552c6a70800000000000000
+      internalID: 8821466841270760592
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 874b43bb20027e44891305e8cae85b91
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":3.0,"y":3.0},"gridSpriteSize":{"x":2240.0,"y":2240.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":2,"keepEmptyRects":false,"isAlternate":false}'
+    nameFileIdTable:
+      Cat_Attack1_0: 6214457495015110012
+      Cat_Attack1_1: -2085928667075791556
+      Cat_Attack1_2: 1584538770899048256
+      Cat_Attack1_3: 2864569294284700868
+      Cat_Attack1_4: 7033677212503866295
+      Cat_Attack1_5: -8459680929634672593
+      Cat_Attack1_6: -515624476529544508
+      Cat_Attack1_7: 8821466841270760592
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

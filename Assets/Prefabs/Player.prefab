@@ -591,6 +591,7 @@ MonoBehaviour:
   stunValue: 1
   knockbackForce: 3
   threadDamage: 30
+  threadTickInterval: 0.5
   firePoint: {fileID: 6236815705829189838}
   needlePool: {fileID: 1502939091984489508}
   threadTrapPrefab: {fileID: 7913861884901470611, guid: 6a607b69f64bb984182d3bda66f71309, type: 3}

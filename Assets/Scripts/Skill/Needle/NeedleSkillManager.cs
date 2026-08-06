@@ -16,7 +16,10 @@ public class NeedleSkillManager : MonoBehaviour
     public float stunDuration = 1.5f;
     public float stunValue = 1f;
     public float knockbackForce = 3f;
-    public float threadDamage = 30f;
+
+    [Header("함정(실) 지속 데미지 설정")]
+    public float threadDamage = 10f; // 틱당 데미지 (수치를 조금 낮추는 걸 추천합니다)
+    public float threadTickInterval = 0.5f; // 0.5초마다 지속 데미지
 
     [Header("프리팹 참조")]
     public Transform firePoint;
@@ -93,20 +96,28 @@ public class NeedleSkillManager : MonoBehaviour
                 return;
             }
 
-            Debug.Log("<color=lime>[바늘 액션]</color> 두 바늘을 연결하여 함정을 만듭니다!");
+            Debug.Log($"<color=lime>[바늘 액션]</color> {groundNeedles.Count}개의 바늘을 연쇄 연결합니다!");
 
-            NeedleProjectile n1 = groundNeedles[0];
-            NeedleProjectile n2 = groundNeedles[1];
+            float trapDuration = 5f;
 
-            n1.SetAsTrapNode();
-            n2.SetAsTrapNode();
-
-            GameObject trapObj = Instantiate(threadTrapPrefab);
-            NeedleThreadTrap trapScript = trapObj.GetComponent<NeedleThreadTrap>();
-
-            if (trapScript != null)
+            foreach (var needle in groundNeedles)
             {
-                trapScript.Setup(n1, n2, threadDamage, gameObject);
+                needle.SetAsTrapNode(trapDuration);
+            }
+
+            for (int i = 0; i < groundNeedles.Count - 1; i++)
+            {
+                NeedleProjectile n1 = groundNeedles[i];
+                NeedleProjectile n2 = groundNeedles[i + 1];
+
+                GameObject trapObj = Instantiate(threadTrapPrefab);
+                NeedleThreadTrap trapScript = trapObj.GetComponent<NeedleThreadTrap>();
+
+                if (trapScript != null)
+                {
+                    //  Setup 함수에 틱 간격(threadTickInterval)을 추가로 넘겨줍니다.
+                    trapScript.Setup(n1.transform.position, n2.transform.position, threadDamage, threadTickInterval, gameObject, trapDuration);
+                }
             }
         }
     }

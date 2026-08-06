@@ -8,6 +8,7 @@ TagManager:
   - Rope
   - Ground
   - Projectile
+  - NeedleBlocker
   layers:
   - Default
   - TransparentFX
@@ -20,8 +21,8 @@ TagManager:
   - Chess
   - Rope
   - Interactable
-  - 
-  - 
+  - KillNeedle
+  - Needle
   - 
   - 
   - 

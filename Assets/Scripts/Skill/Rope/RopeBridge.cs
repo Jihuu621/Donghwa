@@ -1,5 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+
+[RequireComponent(typeof(LineRenderer))]
+[RequireComponent(typeof(EdgeCollider2D))]
 public class RopeBridge : MonoBehaviour
 {
     public GameObject segmentPrefab;
@@ -7,20 +10,33 @@ public class RopeBridge : MonoBehaviour
     public int minSegmentCount = 4;
     public int maxSegmentCount = 200;
 
+    [Header("플레이어 하중 물리 설정")]
+    public float playerWeightForce = 25f; // 서 있을 때 줄을 누르는 힘
+    public float detectRadius = 0.6f;     // 플레이어 감지 거리
+
+    private LayerMask playerLayer;        // "Player" 레이어 자동 할당
     private int segmentCount;
     private LineRenderer line;
+    private EdgeCollider2D edgeCollider;
     private List<Transform> segments = new List<Transform>();
-    private List<Collider2D> segmentColliders = new List<Collider2D>(); // 추가
+    private List<Rigidbody2D> segmentRbs = new List<Rigidbody2D>();
+    private List<Collider2D> segmentColliders = new List<Collider2D>();
+
     public GameObject StartObj { get; private set; }
     public GameObject EndObj { get; private set; }
 
-    // 플레이어가 위로 점프 중이면 모든 세그먼트 충돌 무시
+    private void Awake()
+    {
+        // 코드에서 자동으로 "Player" 레이어를 찾아 설정
+        playerLayer = LayerMask.GetMask("Player");
+    }
+
     public void SetPassThrough(Collider2D playerCol, bool ignore)
     {
-        for (int i = 0; i < segmentColliders.Count; i++)
+        // 개별 세그먼트 대신 단일 EdgeCollider2D와 충돌 여부 제어
+        if (edgeCollider != null)
         {
-            if (segmentColliders[i] != null)
-                Physics2D.IgnoreCollision(playerCol, segmentColliders[i], ignore);
+            Physics2D.IgnoreCollision(playerCol, edgeCollider, ignore);
         }
     }
 
@@ -28,6 +44,8 @@ public class RopeBridge : MonoBehaviour
     {
         StartObj = start.gameObject;
         EndObj = end.gameObject;
+
+        edgeCollider = GetComponent<EdgeCollider2D>();
 
         float dist = Vector2.Distance(start.position, end.position);
 
@@ -52,6 +70,7 @@ public class RopeBridge : MonoBehaviour
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
 
         segments.Add(start);
+        segmentRbs.Add(startRB);
         Rigidbody2D prevRB = startRB;
 
         float step = dist / (segmentCount + 1);
@@ -65,6 +84,7 @@ public class RopeBridge : MonoBehaviour
 
             Rigidbody2D segRB = seg.GetComponent<Rigidbody2D>();
             segRB.angularDamping = 20f;
+            segmentRbs.Add(segRB);
 
             HingeJoint2D joint = seg.GetComponent<HingeJoint2D>();
             joint.connectedBody = prevRB;
@@ -72,9 +92,16 @@ public class RopeBridge : MonoBehaviour
             joint.anchor = new Vector2(-0.5f, 0);
             joint.connectedAnchor = (i == 0) ? Vector2.zero : new Vector2(0.5f, 0);
 
-            // 콜라이더 캐시 (PlatformEffector2D 대신 사용)
+            // 세그먼트 콜라이더 캐싱 및 EdgeCollider와의 자가 충돌 방지 (심장박동 진동 방지)
             Collider2D segCol = seg.GetComponent<Collider2D>();
-            if (segCol != null) segmentColliders.Add(segCol);
+            if (segCol != null)
+            {
+                segmentColliders.Add(segCol);
+                if (edgeCollider != null)
+                {
+                    Physics2D.IgnoreCollision(edgeCollider, segCol, true);
+                }
+            }
 
             prevRB = segRB;
             segments.Add(seg.transform);
@@ -85,10 +112,16 @@ public class RopeBridge : MonoBehaviour
 
         endJoint.connectedBody = prevRB;
         endJoint.autoConfigureConnectedAnchor = false;
-        endJoint.anchor = Vector2.zero;
+
+        // 오브젝트 회전 각도/피벗과 무관하게 실제 콜라이더 바운드 중심에 줄 연결
+        Collider2D endCol = end.GetComponent<Collider2D>();
+        Vector2 localCenter = endCol != null ? (Vector2)end.InverseTransformPoint(endCol.bounds.center) : Vector2.zero;
+
+        endJoint.anchor = localCenter;
         endJoint.connectedAnchor = new Vector2(0.5f, 0);
 
         segments.Add(end);
+        segmentRbs.Add(endRB);
     }
 
     void Update()
@@ -100,11 +133,48 @@ public class RopeBridge : MonoBehaviour
                 Destroy(gameObject);
                 return;
             }
+            line.SetPosition(i, segments[i].position);
         }
+    }
 
+    void LateUpdate()
+    {
+        UpdateEdgeCollider();
+    }
+
+    void FixedUpdate()
+    {
+        ApplyPlayerWeight();
+    }
+
+    // 세그먼트 위치를 기반으로 EdgeCollider2D 실시간 정점 갱신
+    private void UpdateEdgeCollider()
+    {
+        if (edgeCollider == null || segments.Count == 0) return;
+
+        List<Vector2> localPoints = new List<Vector2>(segments.Count);
         for (int i = 0; i < segments.Count; i++)
         {
-            line.SetPosition(i, segments[i].position);
+            if (segments[i] != null)
+            {
+                localPoints.Add(transform.InverseTransformPoint(segments[i].position));
+            }
+        }
+        edgeCollider.SetPoints(localPoints);
+    }
+
+    // 플레이어가 EdgeCollider 위에 있을 때 해당 세그먼트에 하향 힘 전달
+    private void ApplyPlayerWeight()
+    {
+        for (int i = 1; i < segments.Count - 1; i++)
+        {
+            if (segments[i] == null) continue;
+
+            Collider2D player = Physics2D.OverlapCircle(segments[i].position, detectRadius, playerLayer);
+            if (player != null)
+            {
+                segmentRbs[i].AddForce(Vector2.down * playerWeightForce, ForceMode2D.Force);
+            }
         }
     }
 }

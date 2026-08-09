@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class RopeManager : MonoBehaviour
 {
@@ -12,13 +12,11 @@ public class RopeManager : MonoBehaviour
 
     void Update()
     {
-        // 1. 우클릭으로 두 오브젝트 선택 -> 줄 연결 
         if (Input.GetMouseButtonDown(1))
         {
             HandleSelection();
         }
 
-        // 2. 왼쪽 Alt 키를 누르면 -> 물체들을 중앙으로 당김
         if (Input.GetKeyDown(KeyCode.LeftAlt))
         {
             ExecuteAllCentralPulls();
@@ -32,7 +30,8 @@ public class RopeManager : MonoBehaviour
 
         if (hit.collider != null)
         {
-            GameObject selected = hit.collider.gameObject;
+            // [수정] transform.root 대신 Rigidbody2D를 가진 실제 블록(또는 합체 C 블록)만 탐색
+            GameObject selected = GetTargetObject(hit.collider);
 
             if (firstSelected == null)
             {
@@ -51,6 +50,13 @@ public class RopeManager : MonoBehaviour
             if (firstSelected != null) ResetObjectColor(firstSelected);
             firstSelected = null;
         }
+    }
+
+    // 부모 방향으로 탐색하며 Rigidbody2D를 소유한 최상위 합체 오브젝트를 반환
+    GameObject GetTargetObject(Collider2D col)
+    {
+        Rigidbody2D rb = col.GetComponentInParent<Rigidbody2D>();
+        return rb != null ? rb.gameObject : col.gameObject;
     }
 
     void CreateRopeBridge(GameObject a, GameObject b)
@@ -74,14 +80,11 @@ public class RopeManager : MonoBehaviour
 
                 if (a != null && b != null)
                 {
-                    // 즉사 로직 제거됨: 물체가 직접 날아가서 때리도록 냅둡니다.
-                    Vector2 centerPoint = Vector2.Lerp(a.transform.position, b.transform.position, 0.5f);
-
                     if (a.GetComponent<CentralPull>() == null)
-                        a.AddComponent<CentralPull>().Setup(centerPoint, collisionEffectPrefab);
+                        a.AddComponent<CentralPull>().Setup(b.transform, collisionEffectPrefab);
 
                     if (b.GetComponent<CentralPull>() == null)
-                        b.AddComponent<CentralPull>().Setup(centerPoint, collisionEffectPrefab);
+                        b.AddComponent<CentralPull>().Setup(a.transform, collisionEffectPrefab);
                 }
                 Destroy(bridge.gameObject);
             }
@@ -91,13 +94,13 @@ public class RopeManager : MonoBehaviour
 
     void SetObjectColor(GameObject obj, Color color)
     {
-        var sprite = obj.GetComponent<SpriteRenderer>();
-        if (sprite != null) sprite.color = color;
+        SpriteRenderer[] sprites = obj.GetComponentsInChildren<SpriteRenderer>();
+        foreach (var sprite in sprites) sprite.color = color;
     }
 
     void ResetObjectColor(GameObject obj)
     {
-        var sprite = obj.GetComponent<SpriteRenderer>();
-        if (sprite != null) sprite.color = Color.white;
+        SpriteRenderer[] sprites = obj.GetComponentsInChildren<SpriteRenderer>();
+        foreach (var sprite in sprites) sprite.color = Color.white;
     }
 }

@@ -1,26 +1,26 @@
-ï»¿using UnityEngine;
+using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
 [RequireComponent(typeof(EffectManager))]
 public class PlayerController : MonoBehaviour
 {
-    [Header("ì´ë™")]
-    public float moveSpeed = 8f;                // ìµœëŒ€ ì†ë„
+    [Header("ÀÌµ¿")]
+    public float moveSpeed = 8f;                // ÃÖ´ë ¼Óµµ
     public float acceleration = 60f;
     public float deceleration = 60f;
     public float velPower = 0.9f;
 
-    [Header("ì í”„")]
+    [Header("Á¡ÇÁ")]
     public float jumpForce = 18f;
     public float jumpCutMultiplier = 0.5f;
     public int extraJumps = 0;
 
-    [Header("ì í”„ ë³´ì •")]
+    [Header("Á¡ÇÁ º¸Á¤")]
     public float gravityScale = 3f;
     public float fallGravityMultiplier = 2.5f;
 
-    [Header("ë•… & ë²½ ì²´í¬")]
+    [Header("¶¥ & º® Ã¼Å©")]
     public Transform groundCheck;
     public float groundCheckRadius = 0.08f;
     public LayerMask groundLayer;
@@ -28,22 +28,22 @@ public class PlayerController : MonoBehaviour
     public Transform wallCheck;
     public float wallCheckDistance = 0.2f;
 
-    [Header("ì½”ìš”í‹° & ë²„í¼")]
+    [Header("ÄÚ¿äÆ¼ & ¹öÆÛ")]
     public float coyoteTime = 0.12f;
     public float jumpBufferTime = 0.12f;
 
-    [Header("ë²½ ë¯¸ë„ëŸ¬ì§/ì í”„")]
+    [Header("º® ¹Ì²ô·¯Áü/Á¡ÇÁ")]
     public float wallSlideSpeed = 2.5f;
     public Vector2 wallJumpVelocity = new Vector2(12f, 18f);
     public float wallJumpDuration = 0.18f;
 
-    [Header("ëŒ€ì‹œ (ì˜µì…˜)")]
+    [Header("´ë½Ã (¿É¼Ç)")]
     public bool allowDash = false;
     public float dashSpeed = 20f;
     public float dashDuration = 0.14f;
     public float dashCooldown = 0.6f;
 
-    // ë‚´ë¶€ ë³€ìˆ˜ë“¤
+    // ³»ºÎ º¯¼öµé
     Rigidbody2D rb;
     Collider2D playerCollider;
     Animator anim;
@@ -51,26 +51,27 @@ public class PlayerController : MonoBehaviour
     float horizontal;
     bool facingRight = true;
 
-    // ë•…/ë²½ ìƒíƒœ
+    // ¶¥/º® »óÅÂ
     bool isGrounded;
     bool isTouchingWall;
-    int wallDir; // -1 = ì™¼ìª½, 1 = ì˜¤ë¥¸ìª½
+    int wallDir; // -1 = ¿ŞÂÊ, 1 = ¿À¸¥ÂÊ
 
-    // ì í”„ ìƒíƒœ
+    // Á¡ÇÁ »óÅÂ
     float coyoteTimer;
     float jumpBufferTimer;
     int jumpsRemaining;
+    bool jumpThroughRopes;
 
-    // ë²½ ì í”„ ìƒíƒœ
+    // º® Á¡ÇÁ »óÅÂ
     bool isWallSliding;
     float wallJumpTimer;
 
-    // ëŒ€ì‹œ ìƒíƒœ
+    // ´ë½Ã »óÅÂ
     bool isDashing;
     float dashTimer;
     float dashCooldownTimer;
 
-    // ë„‰ë°± ìƒíƒœ
+    // ³Ë¹é »óÅÂ
     float knockbackTimer = 0f;
 
     void Awake()
@@ -79,6 +80,7 @@ public class PlayerController : MonoBehaviour
         playerCollider = GetComponent<Collider2D>();
         anim = GetComponent<Animator>();
         statusEffects = GetComponent<EffectManager>();
+        rb.interpolation = RigidbodyInterpolation2D.Interpolate;
         rb.gravityScale = gravityScale;
         jumpsRemaining = extraJumps;
     }
@@ -87,7 +89,7 @@ public class PlayerController : MonoBehaviour
     {
         if (statusEffects == null) statusEffects = GetComponent<EffectManager>();
 
-        // --- ì…ë ¥ (êµ¬ Input System) ---
+        // --- ÀÔ·Â (±¸ Input System) ---
         horizontal = Input.GetAxisRaw("Horizontal"); // -1,0,1
 
         if (statusEffects != null && statusEffects.BlocksMovement)
@@ -95,15 +97,15 @@ public class PlayerController : MonoBehaviour
             horizontal = 0f;
         }
 
-        // ë„‰ë°± ì¤‘ì´ë©´ ì…ë ¥ ë¬´ì‹œ (Updateì—ì„œë„ ë§‰ì•„ë‘ê¸°)
+        // ³Ë¹é ÁßÀÌ¸é ÀÔ·Â ¹«½Ã (Update¿¡¼­µµ ¸·¾ÆµÎ±â)
         if (knockbackTimer > 0f)
         {
-            // ì…ë ¥ ì°¨ë‹¨
+            // ÀÔ·Â Â÷´Ü
             horizontal = 0f;
             knockbackTimer -= Time.deltaTime;
         }
 
-        // ì í”„ ì…ë ¥
+        // Á¡ÇÁ ÀÔ·Â
         if (Input.GetButtonDown("Jump"))
         {
             jumpBufferTimer = jumpBufferTime;
@@ -115,14 +117,14 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetButtonUp("Jump"))
         {
-            // ê°€ë³€ ì í”„: ì í”„ ì¤‘ê°„ì— ë–¼ë©´ ì†ë„ ì¤„ì´ê¸°
+            // °¡º¯ Á¡ÇÁ: Á¡ÇÁ Áß°£¿¡ ¶¼¸é ¼Óµµ ÁÙÀÌ±â
             if (rb.linearVelocity.y > 0f)
             {
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * jumpCutMultiplier);
             }
         }
 
-        // ëŒ€ì‹œ ì…ë ¥
+        // ´ë½Ã ÀÔ·Â
         bool movementBlocked = statusEffects != null && statusEffects.BlocksMovement;
         if (allowDash && !movementBlocked && Input.GetButtonDown("Fire3") && dashCooldownTimer <= 0f && !isDashing)
         {
@@ -130,18 +132,24 @@ public class PlayerController : MonoBehaviour
         }
         UpdateAnimations();
 
-        // íƒ€ì´ë¨¸
+        // Å¸ÀÌ¸Ó
         if (isGrounded) coyoteTimer = coyoteTime; else coyoteTimer -= Time.deltaTime;
     }
 
     void FixedUpdate()
     {
-        bool jumpingUp = rb.linearVelocity.y > 0.05f;
+        // °æ»ç¸éÀ» °É¾î ¿Ã¶ó°¥ ¶§ÀÇ ¾ç(+) Y ¼Óµµ´Â Á¡ÇÁ°¡ ¾Æ´Ï´Ù. ½ÇÁ¦ Á¡ÇÁ¸¦
+        // ½ÇÇàÇßÀ» ¶§¸¸ ÁÙ Ãæµ¹À» Åë°ú½ÃÅ°°í, »ó½ÂÀÌ ³¡³ª¸é Áï½Ã ´Ù½Ã ÄÒ´Ù.
+        if (jumpThroughRopes && rb.linearVelocity.y <= 0.05f)
+        {
+            jumpThroughRopes = false;
+        }
+
         RopeBridge[] bridges = FindObjectsOfType<RopeBridge>();
 
         for (int i = 0; i < bridges.Length; i++)
         {
-            bridges[i].SetPassThrough(playerCollider, jumpingUp);
+            bridges[i].SetPassThrough(playerCollider, jumpThroughRopes);
         }
 
         PlayerParry parry = GetComponent<PlayerParry>();
@@ -169,7 +177,7 @@ public class PlayerController : MonoBehaviour
             wallJumpTimer -= Time.fixedDeltaTime;
         }
 
-        // ë„‰ë°± ì¤‘ì´ë©´ horizontalì„ 0ìœ¼ë¡œ ë§Œë“¤ì–´ ì»¨íŠ¸ë¡¤ ì ê¸ˆ
+        // ³Ë¹é ÁßÀÌ¸é horizontalÀ» 0À¸·Î ¸¸µé¾î ÄÁÆ®·Ñ Àá±İ
         if (knockbackTimer > 0f)
         {
             horizontal = 0f;
@@ -201,19 +209,23 @@ public class PlayerController : MonoBehaviour
 
     void CheckSurroundings()
     {
-        // ë•… ì²´í¬
+        // ¶¥ Ã¼Å©
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
 
-        // ë²½ ì²´í¬ (ì¢Œìš° ë ˆì´ìºìŠ¤íŠ¸)
+        // º® Ã¼Å© (ÁÂ¿ì ·¹ÀÌÄ³½ºÆ®)
         RaycastHit2D leftHit = Physics2D.Raycast(transform.position, Vector2.left, wallCheckDistance, groundLayer);
         RaycastHit2D rightHit = Physics2D.Raycast(transform.position, Vector2.right, wallCheckDistance, groundLayer);
-        isTouchingWall = leftHit.collider != null || rightHit.collider != null;
-        if (leftHit.collider != null) wallDir = -1; else if (rightHit.collider != null) wallDir = 1; else wallDir = 0;
+        // °æ»ç¸é(Æ¯È÷ »ı¼ºÇÑ ´ë°¢¼± ÁÙ)Àº ¼öÆò ·¹ÀÌ¿¡ ¸Â´õ¶óµµ º®ÀÌ ¾Æ´Ï´Ù.
+        // ÀÌ¸¦ º®À¸·Î ¿ÀÀÎÇÏ¸é ¿Ã¶ó°¥ ¶§ º® ¹Ì²ô·¯ÁüÀÌ °£ÇæÀûÀ¸·Î Àû¿ëµÇ¾î ²÷±ä´Ù.
+        bool leftIsWall = leftHit.collider != null && Mathf.Abs(leftHit.normal.y) < 0.2f;
+        bool rightIsWall = rightHit.collider != null && Mathf.Abs(rightHit.normal.y) < 0.2f;
+        isTouchingWall = leftIsWall || rightIsWall;
+        if (leftIsWall) wallDir = -1; else if (rightIsWall) wallDir = 1; else wallDir = 0;
     }
 
     void HandleMovement()
     {
-        // ë²½ ì í”„ í›„ ì ì‹œ ë™ì•ˆ ì¢Œìš° ì…ë ¥ ë¬´ì‹œ
+        // º® Á¡ÇÁ ÈÄ Àá½Ã µ¿¾È ÁÂ¿ì ÀÔ·Â ¹«½Ã
         if (wallJumpTimer > 0f) horizontal = 0f;
 
         float currentMoveSpeed = moveSpeed;
@@ -227,7 +239,7 @@ public class PlayerController : MonoBehaviour
 
         rb.AddForce(new Vector2(movement, 0f));
 
-        // ì†ë„ ì œí•œ
+        // ¼Óµµ Á¦ÇÑ
         if (Mathf.Abs(rb.linearVelocity.x) > currentMoveSpeed && Mathf.Sign(rb.linearVelocity.x) == Mathf.Sign(targetSpeed))
         {
             rb.linearVelocity = new Vector2(Mathf.Sign(rb.linearVelocity.x) * currentMoveSpeed, rb.linearVelocity.y);
@@ -242,14 +254,14 @@ public class PlayerController : MonoBehaviour
 
     void HandleJumping()
     {
-        // ì í”„ ë²„í¼ & ì½”ìš”í‹° íƒ€ì„
+        // Á¡ÇÁ ¹öÆÛ & ÄÚ¿äÆ¼ Å¸ÀÓ
         if (jumpBufferTimer > 0f)
         {
             if (coyoteTimer > 0f || jumpsRemaining > 0 || isWallSliding)
             {
                 if (isWallSliding)
                 {
-                    // ë²½ ì í”„: ë²½ ë°˜ëŒ€ ë°©í–¥ìœ¼ë¡œ íŠ€ê¸°ê¸°
+                    // º® Á¡ÇÁ: º® ¹İ´ë ¹æÇâÀ¸·Î Æ¢±â±â
                     rb.linearVelocity = new Vector2(-wallDir * wallJumpVelocity.x, wallJumpVelocity.y);
                     wallJumpTimer = wallJumpDuration;
                     isWallSliding = false;
@@ -263,18 +275,19 @@ public class PlayerController : MonoBehaviour
                     }
                 }
 
+                jumpThroughRopes = true;
                 jumpBufferTimer = 0f;
                 coyoteTimer = 0f;
             }
         }
 
-        // ì°©ì§€ ì‹œ ì¶”ê°€ ì í”„ ì´ˆê¸°í™”
+        // ÂøÁö ½Ã Ãß°¡ Á¡ÇÁ ÃÊ±âÈ­
         if (isGrounded && !Input.GetButton("Jump"))
         {
             jumpsRemaining = extraJumps;
         }
 
-        // ë‚™í•˜ ì¤‘ ì¤‘ë ¥ ì¦ê°€
+        // ³«ÇÏ Áß Áß·Â Áõ°¡
         if (rb.linearVelocity.y < 0f)
         {
             rb.gravityScale = gravityScale * fallGravityMultiplier;
@@ -292,7 +305,7 @@ public class PlayerController : MonoBehaviour
         if (isTouchingWall && !isGrounded && rb.linearVelocity.y < 0f)
         {
             isWallSliding = true;
-            // ë‚™í•˜ ì†ë„ ì œí•œ
+            // ³«ÇÏ ¼Óµµ Á¦ÇÑ
             if (rb.linearVelocity.y < -wallSlideSpeed)
             {
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, -wallSlideSpeed);
@@ -306,7 +319,7 @@ public class PlayerController : MonoBehaviour
         dashTimer = dashDuration;
         dashCooldownTimer = dashCooldown;
 
-        // ëŒ€ì‹œ ì¤‘ì—ëŠ” ì¤‘ë ¥ ì œê±°
+        // ´ë½Ã Áß¿¡´Â Áß·Â Á¦°Å
         rb.gravityScale = 0f;
         rb.linearVelocity = new Vector2((facingRight ? 1f : -1f) * dashSpeed, 0f);
     }

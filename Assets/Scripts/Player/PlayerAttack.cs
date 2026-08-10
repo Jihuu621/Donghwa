@@ -134,19 +134,17 @@ public class PlayerAttack : MonoBehaviour
         hitbox.enabled = false;
     }
 
-    float GetDamageMultiplier()
+    /* 패링 히트 게이지에 따른 공격력 배율은 기획 확정 전까지 비활성화합니다.
+    private float GetDamageMultiplier()
     {
-        if (parry == null) return 1f;
-
-        float g = parry.parryHitGauge;
-
-        if (g >= 500) return 1.35f;
-        if (g >= 300) return 1.20f;
-        if (g >= 200) return 1.10f;
-        if (g >= 100) return 1.05f;
-
+        float g = parry.ParryHitGauge;
+        if (g >= 500f) return 1.35f;
+        if (g >= 300f) return 1.20f;
+        if (g >= 200f) return 1.10f;
+        if (g >= 100f) return 1.05f;
         return 1f;
     }
+    */
 
     public void AE_OpenComboWindow()
     {
@@ -188,8 +186,7 @@ public class PlayerAttack : MonoBehaviour
         if (!hitbox.enabled) return;
         if (other.gameObject == gameObject) return;
 
-        float parryMult = GetDamageMultiplier();
-        float finalDamage = currentDamage * parryMult;
+        float finalDamage = currentDamage;
 
         float ampMult = 1f;
         var amp = other.GetComponent<EnemyDamageAmpData>();
@@ -201,7 +198,7 @@ public class PlayerAttack : MonoBehaviour
         if (damageable != null)
         {
             damageable.TakeDamage(finalDamage, gameObject);
-            Debug.Log($"공격 -> {other.name} : {finalDamage} 데미지 (패링히트 x{parryMult:0.00}, 받피증 x{ampMult:0.00})");
+            Debug.Log($"공격 -> {other.name} : {finalDamage} 데미지 (받피증 x{ampMult:0.00})");
         }
     }
 }

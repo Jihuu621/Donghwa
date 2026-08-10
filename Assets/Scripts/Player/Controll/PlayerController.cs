@@ -2,6 +2,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
+[RequireComponent(typeof(EffectManager))]
 public class PlayerController : MonoBehaviour
 {
     [Header("이동")]
@@ -46,6 +47,7 @@ public class PlayerController : MonoBehaviour
     Rigidbody2D rb;
     Collider2D playerCollider;
     Animator anim;
+    EffectManager statusEffects;
     float horizontal;
     bool facingRight = true;
 
@@ -77,6 +79,7 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         playerCollider = GetComponent<Collider2D>();
         anim = GetComponent<Animator>();
+        statusEffects = GetComponent<EffectManager>();
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
         rb.gravityScale = gravityScale;
         jumpsRemaining = extraJumps;
@@ -84,8 +87,15 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (statusEffects == null) statusEffects = GetComponent<EffectManager>();
+
         // --- 입력 (구 Input System) ---
         horizontal = Input.GetAxisRaw("Horizontal"); // -1,0,1
+
+        if (statusEffects != null && statusEffects.BlocksMovement)
+        {
+            horizontal = 0f;
+        }
 
         // 넉백 중이면 입력 무시 (Update에서도 막아두기)
         if (knockbackTimer > 0f)
@@ -115,7 +125,8 @@ public class PlayerController : MonoBehaviour
         }
 
         // 대시 입력
-        if (allowDash && Input.GetButtonDown("Fire3") && dashCooldownTimer <= 0f && !isDashing)
+        bool movementBlocked = statusEffects != null && statusEffects.BlocksMovement;
+        if (allowDash && !movementBlocked && Input.GetButtonDown("Fire3") && dashCooldownTimer <= 0f && !isDashing)
         {
             StartDash();
         }
@@ -142,8 +153,14 @@ public class PlayerController : MonoBehaviour
         }
 
         PlayerParry parry = GetComponent<PlayerParry>();
-        if (parry != null && parry.IsStunned)
+        bool statusStunned = statusEffects != null && statusEffects.BlocksMovement;
+        if ((parry != null && parry.IsStunned) || statusStunned)
         {
+            if (isDashing)
+            {
+                isDashing = false;
+                rb.gravityScale = gravityScale;
+            }
             rb.linearVelocity = Vector2.zero;
             return;
         }
@@ -211,7 +228,10 @@ public class PlayerController : MonoBehaviour
         // 벽 점프 후 잠시 동안 좌우 입력 무시
         if (wallJumpTimer > 0f) horizontal = 0f;
 
-        float targetSpeed = horizontal * moveSpeed;
+        float currentMoveSpeed = moveSpeed;
+        if (statusEffects != null) currentMoveSpeed *= statusEffects.MovementSpeedMultiplier;
+
+        float targetSpeed = horizontal * currentMoveSpeed;
         float speedDiff = targetSpeed - rb.linearVelocity.x;
 
         float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration : deceleration;
@@ -220,9 +240,9 @@ public class PlayerController : MonoBehaviour
         rb.AddForce(new Vector2(movement, 0f));
 
         // 속도 제한
-        if (Mathf.Abs(rb.linearVelocity.x) > moveSpeed && Mathf.Sign(rb.linearVelocity.x) == Mathf.Sign(targetSpeed))
+        if (Mathf.Abs(rb.linearVelocity.x) > currentMoveSpeed && Mathf.Sign(rb.linearVelocity.x) == Mathf.Sign(targetSpeed))
         {
-            rb.linearVelocity = new Vector2(Mathf.Sign(rb.linearVelocity.x) * moveSpeed, rb.linearVelocity.y);
+            rb.linearVelocity = new Vector2(Mathf.Sign(rb.linearVelocity.x) * currentMoveSpeed, rb.linearVelocity.y);
         }
 
         if (knockbackTimer <= 0f)

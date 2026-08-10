@@ -577,7 +577,7 @@ public class CheshireCatAI : EnemyAIBase
             distance);
         for (int i = 0; i < hits.Length; i++)
         {
-            if (hits[i].collider != null && hits[i].collider.GetComponentInParent<NeedleThreadTrap>() != null)
+            if (IsPatternCCounterThread(hits[i].collider))
             {
                 return true;
             }
@@ -1216,7 +1216,7 @@ public class CheshireCatAI : EnemyAIBase
     {
         if (CurrentState != State.PatternCCharge || other == null) return;
 
-        if (other.GetComponentInParent<NeedleThreadTrap>() != null)
+        if (IsPatternCCounterThread(other))
         {
             HandlePatternCCounter();
             return;
@@ -1240,6 +1240,13 @@ public class CheshireCatAI : EnemyAIBase
         return (patternCImpactMask.value & layerBit) != 0 ||
                other.CompareTag("Ground") ||
                other.GetComponentInParent<PlatformEffector2D>() != null;
+    }
+
+    private static bool IsPatternCCounterThread(Collider2D other)
+    {
+        return other != null &&
+               (other.GetComponentInParent<NeedleThreadTrap>() != null ||
+                other.GetComponentInParent<RopeBridge>() != null);
     }
 
     private void SetSmokeForm(bool enabled)

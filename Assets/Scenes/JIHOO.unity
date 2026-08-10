@@ -3732,20 +3732,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55d443d507fcbfb4cb3a298423748b3d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  failWindow: 0.5
-  parryWindow: 0.5
-  guardWindow: 0.5
-  parryCooldown: 0.5
+  guardKey: 306
+  perfectGuardWindow: 0.2
+  guardWindow: 0.6
+  recoveryDuration: 0.5
+  guardActivationCost: 5
   guardDamageReduce: 0.6
+  guardPenalty: 20
+  guardBreakStunDuration: 1
   maxGauge: 100
   currentGauge: 0
   gaugeRegenPerSec: 1
   parryReward: 5
-  guardPenalty: 20
-  parryHitGauge: 0
-  maxParryHitGauge: 600
-  parryHitGain: 30
-  parryHitDecay: 10
 --- !u!114 &1903764464
 MonoBehaviour:
   m_ObjectHideFlags: 0

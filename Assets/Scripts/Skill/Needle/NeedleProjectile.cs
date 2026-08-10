@@ -93,7 +93,11 @@ public class NeedleProjectile : MonoBehaviour
         StopMovement();
 
         IDamageable damageable = enemyObj.GetComponentInParent<IDamageable>();
-        if (damageable != null) damageable.TakeDamage(damage, playerSource);
+        CheshireCatAI cheshireCat = enemyObj.GetComponentInParent<CheshireCatAI>();
+        float finalDamage = cheshireCat != null && cheshireCat.IsGroggy
+            ? damage * cheshireCat.GroggyNeedleDamageMultiplier
+            : damage;
+        if (damageable != null) damageable.TakeDamage(finalDamage, playerSource);
 
         Rigidbody2D enemyRb = enemyObj.GetComponentInParent<Rigidbody2D>();
         if (enemyRb != null)

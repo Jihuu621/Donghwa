@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -18,6 +19,14 @@ public class VisualScissor : MonoBehaviour
     public Texture2D scissorCursorTexture;
     public Vector2 cursorHotspot = Vector2.zero;
 
+    [Header("잘린 줄 소멸")]
+    [SerializeField, Min(0f)] private float ropeCutPieceSeparation = 0.14f;
+    [SerializeField, Min(0f)] private float ropeCutPieceSpeed = 2.4f;
+    [SerializeField, Min(0f)] private float ropeCutPieceLift = 1.1f;
+    [SerializeField, Min(0f)] private float ropeCutRevealDuration = 0.28f;
+    [SerializeField, Min(0f)] private float ropeFadeDelay = 0.15f;
+    [SerializeField, Min(0.05f)] private float ropeFadeDuration = 1f;
+
     private LineRenderer lineRenderer;
     private bool isScissorMode = false;
     private bool isDragging = false;
@@ -26,6 +35,7 @@ public class VisualScissor : MonoBehaviour
     private readonly RaycastHit2D[] snipHits = new RaycastHit2D[64];
     private readonly HashSet<IScissorCutTarget> snippedTargets = new HashSet<IScissorCutTarget>();
     private ContactFilter2D snipContactFilter;
+    private readonly HashSet<GameObject> fadingRopeObjects = new HashSet<GameObject>();
 
     void Awake()
     {
@@ -151,9 +161,24 @@ public class VisualScissor : MonoBehaviour
 
                     if (tex != null)
                     {
+                        GameObject original = poly.gameObject;
+                        bool isRope = original.CompareTag("Rope");
+                        List<GameObject> connectedRope = isRope
+                            ? CollectConnectedRopeObjects(original)
+                            : null;
+
                         // 왼쪽 조각과 오른쪽 조각 생성
-                        CreateVisualPiece(poly.gameObject, leftPoints, tex, texRect, spriteBounds, Vector2.left * 2f);
-                        CreateVisualPiece(poly.gameObject, rightPoints, tex, texRect, spriteBounds, Vector2.right * 2f);
+                        GameObject leftPiece = CreateVisualPiece(original, leftPoints, tex, texRect, spriteBounds, Vector2.left * 2f);
+                        GameObject rightPiece = CreateVisualPiece(original, rightPoints, tex, texRect, spriteBounds, Vector2.right * 2f);
+
+                        if (isRope)
+                        {
+                            leftPiece.layer = original.layer;
+                            rightPiece.layer = original.layer;
+                            leftPiece.tag = original.tag;
+                            rightPiece.tag = original.tag;
+                            BeginConnectedRopeFade(connectedRope, original, leftPiece, rightPiece);
+                        }
                         Destroy(poly.gameObject);
                     }
                 }
@@ -163,7 +188,7 @@ public class VisualScissor : MonoBehaviour
 
 
     // 위에서 자른거 새 오브젝트로 생성
-    void CreateVisualPiece(GameObject original, List<Vector2> points, Texture2D tex, Rect rect, Bounds bounds, Vector2 pushForce)
+    GameObject CreateVisualPiece(GameObject original, List<Vector2> points, Texture2D tex, Rect rect, Bounds bounds, Vector2 pushForce)
     {
         GameObject piece = new GameObject(original.name + "_Piece");
         piece.transform.position = original.transform.position;
@@ -210,6 +235,243 @@ public class VisualScissor : MonoBehaviour
         Rigidbody2D rb = piece.AddComponent<Rigidbody2D>();
         rb.AddForce(pushForce, ForceMode2D.Impulse);
         rb.AddTorque(Random.Range(-2f, 2f), ForceMode2D.Impulse);
+
+        return piece;
+    }
+
+    private List<GameObject> CollectConnectedRopeObjects(GameObject cutSegment)
+    {
+        List<GameObject> result = new List<GameObject>();
+        Rigidbody2D cutBody = cutSegment != null ? cutSegment.GetComponent<Rigidbody2D>() : null;
+        if (cutBody == null) return result;
+
+        Rigidbody2D[] allBodies = FindObjectsByType<Rigidbody2D>(FindObjectsInactive.Include);
+        HashSet<Rigidbody2D> ropeBodies = new HashSet<Rigidbody2D>();
+        Dictionary<Rigidbody2D, List<Rigidbody2D>> links = new Dictionary<Rigidbody2D, List<Rigidbody2D>>();
+
+        foreach (Rigidbody2D body in allBodies)
+        {
+            if (body == null || !body.gameObject.CompareTag("Rope")) continue;
+            ropeBodies.Add(body);
+            links[body] = new List<Rigidbody2D>();
+        }
+
+        foreach (Rigidbody2D body in ropeBodies)
+        {
+            Joint2D[] joints = body.GetComponents<Joint2D>();
+            foreach (Joint2D joint in joints)
+            {
+                Rigidbody2D connected = joint != null ? joint.connectedBody : null;
+                if (connected == null || !ropeBodies.Contains(connected)) continue;
+
+                links[body].Add(connected);
+                links[connected].Add(body);
+            }
+        }
+
+        Queue<Rigidbody2D> pending = new Queue<Rigidbody2D>();
+        HashSet<Rigidbody2D> visited = new HashSet<Rigidbody2D>();
+        pending.Enqueue(cutBody);
+        visited.Add(cutBody);
+
+        while (pending.Count > 0)
+        {
+            Rigidbody2D body = pending.Dequeue();
+            if (body != null) result.Add(body.gameObject);
+
+            if (!links.TryGetValue(body, out List<Rigidbody2D> neighbours)) continue;
+            foreach (Rigidbody2D neighbour in neighbours)
+            {
+                if (neighbour != null && visited.Add(neighbour)) pending.Enqueue(neighbour);
+            }
+        }
+
+        return result;
+    }
+
+    private void BeginConnectedRopeFade(
+        List<GameObject> connectedRope,
+        GameObject cutSegment,
+        GameObject leftPiece,
+        GameObject rightPiece)
+    {
+        HashSet<GameObject> ropeSet = new HashSet<GameObject>();
+        HashSet<Rigidbody2D> ropeBodies = new HashSet<Rigidbody2D>();
+
+        if (connectedRope != null)
+        {
+            foreach (GameObject ropeObject in connectedRope)
+            {
+                if (ropeObject == null) continue;
+                ropeSet.Add(ropeObject);
+                Rigidbody2D body = ropeObject.GetComponent<Rigidbody2D>();
+                if (body != null) ropeBodies.Add(body);
+            }
+        }
+
+        // A block or another non-rope endpoint can still own a joint connected to this chain.
+        // Release it immediately so gameplay is cut before the visual fade finishes.
+        Joint2D[] allJoints = FindObjectsByType<Joint2D>(FindObjectsInactive.Include);
+        foreach (Joint2D joint in allJoints)
+        {
+            if (joint == null || joint.connectedBody == null) continue;
+            if (!ropeBodies.Contains(joint.connectedBody) || ropeSet.Contains(joint.gameObject)) continue;
+
+            joint.enabled = false;
+            Destroy(joint);
+        }
+
+        if (connectedRope != null)
+        {
+            foreach (GameObject ropeObject in connectedRope)
+            {
+                if (ropeObject == null || ropeObject == cutSegment) continue;
+                PrepareRopeObjectForFade(ropeObject, ropeCutRevealDuration);
+            }
+        }
+
+        SeparateCutPieces(leftPiece, rightPiece);
+        StartCoroutine(FadeCutPieceAfterReveal(leftPiece));
+        StartCoroutine(FadeCutPieceAfterReveal(rightPiece));
+    }
+
+    private void SeparateCutPieces(GameObject leftPiece, GameObject rightPiece)
+    {
+        if (ropeCutPieceSeparation <= 0f) return;
+
+        if (leftPiece != null)
+        {
+            leftPiece.transform.position += Vector3.left * ropeCutPieceSeparation;
+            SetCutPieceVelocity(leftPiece, Vector2.left);
+        }
+
+        if (rightPiece != null)
+        {
+            rightPiece.transform.position += Vector3.right * ropeCutPieceSeparation;
+            SetCutPieceVelocity(rightPiece, Vector2.right);
+        }
+    }
+
+    private void SetCutPieceVelocity(GameObject piece, Vector2 horizontalDirection)
+    {
+        Rigidbody2D body = piece != null ? piece.GetComponent<Rigidbody2D>() : null;
+        if (body == null) return;
+
+        body.bodyType = RigidbodyType2D.Dynamic;
+        body.simulated = true;
+        body.gravityScale = 1f;
+        body.linearVelocity = horizontalDirection.normalized * ropeCutPieceSpeed + Vector2.up * ropeCutPieceLift;
+    }
+
+    private void PrepareRopeObjectForFade(GameObject ropeObject, float additionalDelay = 0f)
+    {
+        if (ropeObject == null || !fadingRopeObjects.Add(ropeObject)) return;
+
+        Collider2D[] colliders = ropeObject.GetComponentsInChildren<Collider2D>(true);
+        foreach (Collider2D collider in colliders)
+        {
+            if (collider != null) collider.enabled = false;
+        }
+
+        Joint2D[] joints = ropeObject.GetComponents<Joint2D>();
+        foreach (Joint2D joint in joints)
+        {
+            if (joint != null) joint.enabled = false;
+        }
+
+        Rigidbody2D body = ropeObject.GetComponent<Rigidbody2D>();
+        if (body != null)
+        {
+            body.linearVelocity = Vector2.zero;
+            body.angularVelocity = 0f;
+            body.simulated = false;
+        }
+
+        StartCoroutine(FadeAndDestroyRopeObject(ropeObject, additionalDelay));
+    }
+
+    private IEnumerator FadeCutPieceAfterReveal(GameObject piece)
+    {
+        if (piece == null || !fadingRopeObjects.Add(piece)) yield break;
+
+        // Keep the two fresh pieces dynamic briefly so the cut visibly opens up
+        // before either the chain or the pieces begin to fade.
+        if (ropeCutRevealDuration > 0f)
+        {
+            yield return new WaitForSeconds(ropeCutRevealDuration);
+        }
+
+        if (piece == null) yield break;
+
+        Collider2D[] colliders = piece.GetComponentsInChildren<Collider2D>(true);
+        foreach (Collider2D collider in colliders)
+        {
+            if (collider != null) collider.enabled = false;
+        }
+
+        // Keep the Rigidbody2D simulated and preserve its velocity while fading.
+        // Only collisions are disabled so the visual debris continues flying without
+        // interfering with the player, platforms, or the newly freed block.
+        yield return FadeAndDestroyRopeObject(piece, 0f);
+    }
+
+    private IEnumerator FadeAndDestroyRopeObject(GameObject ropeObject, float additionalDelay = 0f)
+    {
+        float initialDelay = Mathf.Max(0f, ropeFadeDelay + additionalDelay);
+        if (initialDelay > 0f)
+        {
+            yield return new WaitForSeconds(initialDelay);
+        }
+
+        SpriteRenderer[] spriteRenderers = ropeObject != null
+            ? ropeObject.GetComponentsInChildren<SpriteRenderer>(true)
+            : new SpriteRenderer[0];
+        Color[] spriteColors = new Color[spriteRenderers.Length];
+        for (int i = 0; i < spriteRenderers.Length; i++)
+        {
+            spriteColors[i] = spriteRenderers[i].color;
+        }
+
+        MeshRenderer[] meshRenderers = ropeObject != null
+            ? ropeObject.GetComponentsInChildren<MeshRenderer>(true)
+            : new MeshRenderer[0];
+        Material[] materials = new Material[meshRenderers.Length];
+        Color[] materialColors = new Color[meshRenderers.Length];
+        for (int i = 0; i < meshRenderers.Length; i++)
+        {
+            materials[i] = meshRenderers[i].material;
+            materialColors[i] = materials[i] != null && materials[i].HasProperty("_Color")
+                ? materials[i].color
+                : Color.white;
+        }
+
+        float elapsed = 0f;
+        while (ropeObject != null && elapsed < ropeFadeDuration)
+        {
+            elapsed += Time.deltaTime;
+            float alpha = 1f - Mathf.Clamp01(elapsed / ropeFadeDuration);
+
+            for (int i = 0; i < spriteRenderers.Length; i++)
+            {
+                if (spriteRenderers[i] == null) continue;
+                Color color = spriteColors[i];
+                color.a *= alpha;
+                spriteRenderers[i].color = color;
+            }
+
+            for (int i = 0; i < materials.Length; i++)
+            {
+                if (materials[i] == null || !materials[i].HasProperty("_Color")) continue;
+                Color color = materialColors[i];
+                color.a *= alpha;
+                materials[i].color = color;
+            }
+
+            yield return null;
+        }
+
+        fadingRopeObjects.Remove(ropeObject);
+        if (ropeObject != null) Destroy(ropeObject);
     }
 
     bool SlicePolygon(PolygonCollider2D collider, Vector2 start, Vector2 end, out List<Vector2> left, out List<Vector2> right)

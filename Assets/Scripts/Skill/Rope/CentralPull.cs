@@ -31,8 +31,8 @@ public class CentralPull : MonoBehaviour
     private Material pullLineMaterial;
 
     /// <summary>
-    /// µÎ ºí·Ï(¶Ç´Â ÀÌ¹Ì ÇÕÃÄÁø µÎ ±×·ì)À» ¼öÆò ÀÏ·Ä ¸ñÇ¥Á¡À¸·Î ´ç±ä´Ù.
-    /// ±×·ì ³»ºÎ ÀÚ½ÄÀÇ »ó´ë À§Ä¡´Â ¹Ù²ÙÁö ¾Ê°í ·çÆ® Rigidbody2D¸¸ ÀÌµ¿ÇÑ´Ù.
+    /// ë‘ ë¸”ë¡(ë˜ëŠ” ì´ë¯¸ í•©ì³ì§„ ë‘ ê·¸ë£¹)ì„ ìˆ˜í‰ ì¼ë ¬ ëª©í‘œì ìœ¼ë¡œ ë‹¹ê¸´ë‹¤.
+    /// ê·¸ë£¹ ë‚´ë¶€ ìì‹ì˜ ìƒëŒ€ ìœ„ì¹˜ëŠ” ë°”ê¾¸ì§€ ì•Šê³  ë£¨íŠ¸ Rigidbody2Dë§Œ ì´ë™í•œë‹¤.
     /// </summary>
     public static bool TryStartPair(
         GameObject a,
@@ -169,8 +169,8 @@ public class CentralPull : MonoBehaviour
         partnerPull.rb.linearVelocity = Vector2.zero;
         Physics2D.SyncTransforms();
 
-        // ´ç±è °úÁ¤ÀÇ ¹°¸® ¿ÀÂ÷¿Í ±×·ì ·çÆ®ÀÇ ÇÇ¹ş ¿ÀÂ÷¸¦ Á¦°ÅÇÑ´Ù.
-        // ÀÌ ´Ü°è´Â ¼±ÅÃ ¼ø¼­¿Í ¹«°üÇÏ°Ô ÇöÀç Äİ¶óÀÌ´õÀÇ ÁÂ¿ì °æ°è¸¦ ´Ù½Ã ¸ÂÃá´Ù.
+        // ë‹¹ê¹€ ê³¼ì •ì˜ ë¬¼ë¦¬ ì˜¤ì°¨ì™€ ê·¸ë£¹ ë£¨íŠ¸ì˜ í”¼ë²— ì˜¤ì°¨ë¥¼ ì œê±°í•œë‹¤.
+        // ì´ ë‹¨ê³„ëŠ” ì„ íƒ ìˆœì„œì™€ ë¬´ê´€í•˜ê²Œ í˜„ì¬ ì½œë¼ì´ë”ì˜ ì¢Œìš° ê²½ê³„ë¥¼ ë‹¤ì‹œ ë§ì¶˜ë‹¤.
         SnapPairToFinalLayout();
 
         RestorePairCollisions();
@@ -180,10 +180,39 @@ public class CentralPull : MonoBehaviour
         GameObject b = partnerPull.gameObject;
         float combinedMass = Mathf.Max(1f, rb.mass + partnerPull.rb.mass);
 
-        // ±âÁ¸ Rigidbody2D°¡ ½ÇÁ¦·Î Á¦°ÅµÇ´Â ´ÙÀ½ ÇÁ·¹ÀÓ±îÁö owner´Â À¯ÁöÇÑ´Ù.
-        // ±×·¡¾ß compound collider°¡ »õ ·çÆ®¿¡ ºÙÀº µÚ¿¡µµ ¸¶Áö¸· Á¤·ÄÀ» º¸ÀåÇÒ ¼ö ÀÖ´Ù.
+        // ê¸°ì¡´ Rigidbody2Dê°€ ì‹¤ì œë¡œ ì œê±°ë˜ëŠ” ë‹¤ìŒ í”„ë ˆì„ê¹Œì§€ ownerëŠ” ìœ ì§€í•œë‹¤.
+        // ê·¸ë˜ì•¼ compound colliderê°€ ìƒˆ ë£¨íŠ¸ì— ë¶™ì€ ë’¤ì—ë„ ë§ˆì§€ë§‰ ì •ë ¬ì„ ë³´ì¥í•  ìˆ˜ ìˆë‹¤.
         StopWithoutRestoringBody(false);
         partnerPull.StopWithoutRestoringBody(true);
+
+        StartCoroutine(MergeAfterReleasingOldBodies(a, b, combinedMass));
+    }
+
+    private System.Collections.IEnumerator MergeAfterReleasingOldBodies(
+        GameObject a,
+        GameObject b,
+        float combinedMass)
+    {
+        Rigidbody2D aBody = a != null ? a.GetComponent<Rigidbody2D>() : null;
+        Rigidbody2D bBody = b != null ? b.GetComponent<Rigidbody2D>() : null;
+
+        // Hanging blocks can still have their original HingeJoint2D after the upper rope is cut.
+        // Unity refuses to remove a Rigidbody2D while a Joint2D depends on it. The old code first
+        // set simulated=false and then failed to remove the body, leaving its collider permanently
+        // outside the physics simulation. Remove the dependencies one frame before the bodies.
+        ReleaseBodyDependencies(aBody);
+        ReleaseBodyDependencies(bBody);
+        yield return null;
+
+        DestroyBody(aBody);
+        DestroyBody(bBody);
+        yield return null;
+
+        if (a == null || b == null)
+        {
+            Destroy(this);
+            yield break;
+        }
 
         GameObject merged = MergeObjects(a, b, combinedMass);
         if (merged != null)
@@ -193,6 +222,31 @@ public class CentralPull : MonoBehaviour
         else
         {
             Destroy(this);
+        }
+    }
+
+    private static void ReleaseBodyDependencies(Rigidbody2D body)
+    {
+        if (body == null) return;
+
+        body.linearVelocity = Vector2.zero;
+        body.angularVelocity = 0f;
+        body.simulated = false;
+
+        Joint2D[] dependentJoints = body.GetComponents<Joint2D>();
+        foreach (Joint2D joint in dependentJoints)
+        {
+            if (joint == null) continue;
+            joint.enabled = false;
+            Destroy(joint);
+        }
+    }
+
+    private static void DestroyBody(Rigidbody2D body)
+    {
+        if (body != null)
+        {
+            Destroy(body);
         }
     }
 
@@ -221,7 +275,7 @@ public class CentralPull : MonoBehaviour
 
     private System.Collections.IEnumerator FinalizeMergedLayout(GameObject merged, GameObject a, GameObject b)
     {
-        // Destroy(Rigidbody2D)´Â ÇÁ·¹ÀÓ ³¡¿¡ Ã³¸®µÈ´Ù. ±× µÚ¿¡ ÀÚ½Ä Sprite/ColliderÀÇ ½ÇÁ¦ ¿ùµå °æ°è¸¦ ÀĞ´Â´Ù.
+        // Destroy(Rigidbody2D)ëŠ” í”„ë ˆì„ ëì— ì²˜ë¦¬ëœë‹¤. ê·¸ ë’¤ì— ìì‹ Sprite/Colliderì˜ ì‹¤ì œ ì›”ë“œ ê²½ê³„ë¥¼ ì½ëŠ”ë‹¤.
         yield return null;
 
         if (merged != null && a != null && b != null &&
@@ -254,7 +308,7 @@ public class CentralPull : MonoBehaviour
         out Vector2 aTarget,
         out Vector2 bTarget)
     {
-        // x°¡ °°À¸¸é Ã¹ ¹øÂ°·Î ¼±ÅÃÇÑ ±×·ì(a)À» ¿ŞÂÊ¿¡ µÎ¾î °á°ú°¡ Ç×»ó ¿¹Ãø °¡´ÉÇÏ°Ô ÇÑ´Ù.
+        // xê°€ ê°™ìœ¼ë©´ ì²« ë²ˆì§¸ë¡œ ì„ íƒí•œ ê·¸ë£¹(a)ì„ ì™¼ìª½ì— ë‘ì–´ ê²°ê³¼ê°€ í•­ìƒ ì˜ˆì¸¡ ê°€ëŠ¥í•˜ê²Œ í•œë‹¤.
         bool aIsLeft = aBounds.center.x < bBounds.center.x ||
                        Mathf.Approximately(aBounds.center.x, bBounds.center.x);
 
@@ -281,7 +335,7 @@ public class CentralPull : MonoBehaviour
 
     private static bool TryGetObjectBounds(GameObject obj, out Bounds bounds)
     {
-        // ÇÃ·¹ÀÌ¾î°¡ º¸´Â ½ÇÁ¦ ºí·Ï Å×µÎ¸®¸¦ ¿ì¼±ÇÑ´Ù. Collider¿Í ½ºÇÁ¶óÀÌÆ® Å©±â°¡ ´Ş¶óµµ Æ´ÀÌ ³²Áö ¾Ê´Â´Ù.
+        // í”Œë ˆì´ì–´ê°€ ë³´ëŠ” ì‹¤ì œ ë¸”ë¡ í…Œë‘ë¦¬ë¥¼ ìš°ì„ í•œë‹¤. Colliderì™€ ìŠ¤í”„ë¼ì´íŠ¸ í¬ê¸°ê°€ ë‹¬ë¼ë„ í‹ˆì´ ë‚¨ì§€ ì•ŠëŠ”ë‹¤.
         SpriteRenderer[] sprites = obj.GetComponentsInChildren<SpriteRenderer>();
         if (sprites.Length > 0)
         {
@@ -450,13 +504,7 @@ public class CentralPull : MonoBehaviour
             (a.transform.position.z + b.transform.position.z) * 0.5f);
         merged.layer = a.layer;
 
-        Rigidbody2D aRb = a.GetComponent<Rigidbody2D>();
-        Rigidbody2D bRb = b.GetComponent<Rigidbody2D>();
-
-        DisableAndRemoveBody(aRb);
-        DisableAndRemoveBody(bRb);
-
-        // ¿ùµå ¹èÄ¡¸¦ À¯ÁöÇÏ¹Ç·Î A+B·Î ¸¸µç DÀÇ ³»ºÎ ÇüÅÂµµ D+C ÇÕÃ¼¿¡¼­ ±×´ë·Î º¸Á¸µÈ´Ù.
+        // ì›”ë“œ ë°°ì¹˜ë¥¼ ìœ ì§€í•˜ë¯€ë¡œ A+Bë¡œ ë§Œë“  Dì˜ ë‚´ë¶€ í˜•íƒœë„ D+C í•©ì²´ì—ì„œ ê·¸ëŒ€ë¡œ ë³´ì¡´ëœë‹¤.
         a.transform.SetParent(merged.transform, true);
         b.transform.SetParent(merged.transform, true);
 
@@ -467,22 +515,12 @@ public class CentralPull : MonoBehaviour
         mergedRb.angularDamping = 5f;
         mergedRb.gravityScale = 0f;
         mergedRb.freezeRotation = true;
-        // ÇÕÃ¼ ÈÄ¿¡´Â °íÁ¤ ¹ßÆÇÀ¸·Î À¯ÁöÇÏ°í, ´ÙÀ½ Alt ´ç±èÀ» ½ÃÀÛÇÒ ¶§ ´Ù½Ã Dynamic/Continuous·Î ÀüÈ¯ÇÑ´Ù.
+        // í•©ì²´ í›„ì—ëŠ” ê³ ì • ë°œíŒìœ¼ë¡œ ìœ ì§€í•˜ê³ , ë‹¤ìŒ Alt ë‹¹ê¹€ì„ ì‹œì‘í•  ë•Œ ë‹¤ì‹œ Dynamic/Continuousë¡œ ì „í™˜í•œë‹¤.
         mergedRb.collisionDetectionMode = CollisionDetectionMode2D.Discrete;
         mergedRb.interpolation = RigidbodyInterpolation2D.None;
 
         Physics2D.SyncTransforms();
         return merged;
-    }
-
-    private static void DisableAndRemoveBody(Rigidbody2D body)
-    {
-        if (body == null) return;
-
-        body.linearVelocity = Vector2.zero;
-        body.angularVelocity = 0f;
-        body.simulated = false;
-        Destroy(body);
     }
 
     private void OnCollisionEnter2D(Collision2D collision)

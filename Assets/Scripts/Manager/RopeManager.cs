@@ -7,9 +7,9 @@ public class RopeManager : MonoBehaviour
     public GameObject ropePrefab;
     public GameObject collisionEffectPrefab;
 
-    [Header("ÇÕÃ¼ ¼³Á¤")]
+    [Header("í•©ì²´ ì„¤ì •")]
     [SerializeField, Min(0.1f)] private float pullSpeed = 20f;
-    // Collider °æ°è´Â ¸Â¾Æµµ ½ºÇÁ¶óÀÌÆ®ÀÇ Åõ¸í ¿©¹é ¶§¹®¿¡ È­¸é»ó Æ´ÀÌ º¸ÀÏ ¼ö ÀÖ´Ù.
+    // Collider ê²½ê³„ëŠ” ë§ì•„ë„ ìŠ¤í”„ë¼ì´íŠ¸ì˜ íˆ¬ëª… ì—¬ë°± ë•Œë¬¸ì— í™”ë©´ìƒ í‹ˆì´ ë³´ì¼ ìˆ˜ ìˆë‹¤.
     [SerializeField, Min(0f)] private float horizontalOverlap = 0.025f;
 
     private GameObject firstSelected;
@@ -61,8 +61,8 @@ public class RopeManager : MonoBehaviour
         }
     }
 
-    // ÇÕÃ¼ Á÷ÈÄ¿¡´Â ÀÚ½Ä Rigidbody2DÀÇ Destroy°¡ ÇÑ ÇÁ·¹ÀÓ ´Ê°Ô ¹İ¿µµÉ ¼ö ÀÖ´Ù.
-    // Å¬¸¯ÇÑ Äİ¶óÀÌ´õÀÇ È°¼º Rigidbody¸¦ ¿ì¼± »ç¿ëÇÏ°í, ÇÊ¿äÇÏ¸é ºÎ¸ğ ¹æÇâÀ¸·Î Ã£´Â´Ù.
+    // í•©ì²´ ì§í›„ì—ëŠ” ìì‹ Rigidbody2Dì˜ Destroyê°€ í•œ í”„ë ˆì„ ëŠ¦ê²Œ ë°˜ì˜ë  ìˆ˜ ìˆë‹¤.
+    // í´ë¦­í•œ ì½œë¼ì´ë”ì˜ í™œì„± Rigidbodyë¥¼ ìš°ì„  ì‚¬ìš©í•˜ê³ , í•„ìš”í•˜ë©´ ë¶€ëª¨ ë°©í–¥ìœ¼ë¡œ ì°¾ëŠ”ë‹¤.
     GameObject GetTargetObject(Collider2D col)
     {
         Rigidbody2D attachedBody = col.attachedRigidbody;
@@ -87,13 +87,13 @@ public class RopeManager : MonoBehaviour
     {
         if (a == null || b == null || a == b || IsReservedByActiveBridge(a) || IsReservedByActiveBridge(b))
         {
-            Debug.LogWarning("[RopeManager] ÇÏ³ªÀÇ ºí·Ï ±×·ì¿¡´Â ÇÑ ¹ø¿¡ ÇÏ³ªÀÇ ÇÕÃ¼ ¿¬°á¸¸ ¸¸µé ¼ö ÀÖ½À´Ï´Ù.");
+            Debug.LogWarning("[RopeManager] í•˜ë‚˜ì˜ ë¸”ë¡ ê·¸ë£¹ì—ëŠ” í•œ ë²ˆì— í•˜ë‚˜ì˜ í•©ì²´ ì—°ê²°ë§Œ ë§Œë“¤ ìˆ˜ ìˆìŠµë‹ˆë‹¤.");
             return;
         }
 
         if (ropePrefab == null)
         {
-            Debug.LogError("[RopeManager] Rope PrefabÀÌ ÁöÁ¤µÇÁö ¾Ê¾Ò½À´Ï´Ù.");
+            Debug.LogError("[RopeManager] Rope Prefabì´ ì§€ì •ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
             return;
         }
 
@@ -102,7 +102,7 @@ public class RopeManager : MonoBehaviour
 
         if (bridge == null)
         {
-            Debug.LogError("[RopeManager] Rope Prefab¿¡ RopeBridge°¡ ¾ø½À´Ï´Ù.");
+            Debug.LogError("[RopeManager] Rope Prefabì— RopeBridgeê°€ ì—†ìŠµë‹ˆë‹¤.");
             Destroy(ropeObj);
             return;
         }
@@ -126,7 +126,7 @@ public class RopeManager : MonoBehaviour
 
     void ExecuteAllCentralPulls()
     {
-        // Alt Àü¿¡ ³²¾Æ ÀÖ´ø ¹İÂÊ ¼±ÅÃÀÌ ÇÕÃ¼ ÈÄ ÀÚ½Ä ºí·ÏÀ» Á÷Á¢ °¡¸®Å°Áö ¾Êµµ·Ï ºñ¿î´Ù.
+        // Alt ì „ì— ë‚¨ì•„ ìˆë˜ ë°˜ìª½ ì„ íƒì´ í•©ì²´ í›„ ìì‹ ë¸”ë¡ì„ ì§ì ‘ ê°€ë¦¬í‚¤ì§€ ì•Šë„ë¡ ë¹„ìš´ë‹¤.
         ClearSelection();
 
         for (int i = activeBridges.Count - 1; i >= 0; i--)
@@ -148,7 +148,7 @@ public class RopeManager : MonoBehaviour
                             pullSpeed,
                             -horizontalOverlap))
                     {
-                        Debug.LogWarning("[RopeManager] ºí·Ï ÇÕÃ¼¸¦ ½ÃÀÛÇÏÁö ¸øÇß½À´Ï´Ù.");
+                        Debug.LogWarning("[RopeManager] ë¸”ë¡ í•©ì²´ë¥¼ ì‹œì‘í•˜ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.");
                     }
                 }
 

@@ -1,22 +1,23 @@
-using UnityEngine;
+using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 [RequireComponent(typeof(SimplePool))]
 public class NeedleSkillManager : MonoBehaviour
 {
     public static NeedleSkillManager Instance;
 
-    [Header("스킬 설정")]
+    [Header("Throw Settings")]
     public float cooldown = 1f;
     public float throwSpeed = 30f;
 
-    [Header("데미지 및 효과 설정")]
+    [Header("Damage and Effects")]
     public float needleDamage = 15f;
     public float stunDuration = 1.5f;
     public float stunValue = 1f;
     public float knockbackForce = 3f;
 
-    [Header("적 바늘 그래플")]
+    [Header("Enemy Needle Grapple")]
     public float grappleAcceleration = 120f;
     public float grappleMaxSpeed = 28f;
     public float grappleReleaseDistance = 1.2f;
@@ -24,24 +25,37 @@ public class NeedleSkillManager : MonoBehaviour
     [Range(0f, 1f)] public float grappleGravityMultiplier = 0.35f;
     public float grappleMomentumDuration = 0.18f;
 
-    [Header("함정(실) 지속 데미지 설정")]
-    public float threadDamage = 10f; // 틱당 데미지 (수치를 조금 낮추는 걸 추천합니다)
-    public float threadTickInterval = 0.5f; // 0.5초마다 지속 데미지
+    [Header("Thread Trap Damage")]
+    public float threadDamage = 10f;
+    public float threadTickInterval = 0.5f;
 
-    [Header("프리팹 참조")]
+    [Header("Prefab References")]
     public Transform firePoint;
     public SimplePool needlePool;
     public GameObject threadTrapPrefab;
 
+    [Header("Perfect Guard Charge")]
+    [SerializeField, Min(1)] private int maximumNeedleCharges = 3;
+    [SerializeField, HideInInspector] private int parryHalfUnits;
+
     private float lastFireTime = -999f;
-    private List<NeedleProjectile> activeNeedles = new List<NeedleProjectile>();
+    private readonly List<NeedleProjectile> activeNeedles = new List<NeedleProjectile>();
     private Rigidbody2D playerRigidbody;
     private PlayerController playerController;
     private EffectManager playerStatusEffects;
+    private PlayerParry playerParry;
     private NeedleProjectile grappleNeedle;
     private float grappleTimer;
     private float originalGravityScale;
     private bool isGrappling;
+
+    public event Action<int, int> OnParryChargeChanged;
+    public event Action OnNeedleThrowDenied;
+
+    public int ParryHalfUnits => parryHalfUnits;
+    public int MaximumParryHalfUnits => Mathf.Max(1, maximumNeedleCharges) * 2;
+    public int AvailableNeedleThrows => parryHalfUnits / 2;
+    public int MaximumNeedleCharges => Mathf.Max(1, maximumNeedleCharges);
 
     private void Awake()
     {
@@ -50,9 +64,54 @@ public class NeedleSkillManager : MonoBehaviour
         playerRigidbody = GetComponent<Rigidbody2D>();
         playerController = GetComponent<PlayerController>();
         playerStatusEffects = GetComponent<EffectManager>();
+        playerParry = GetComponent<PlayerParry>();
+        parryHalfUnits = Mathf.Clamp(parryHalfUnits, 0, MaximumParryHalfUnits);
     }
 
-    void Update()
+    private void OnEnable()
+    {
+        if (playerParry == null)
+        {
+            playerParry = GetComponent<PlayerParry>();
+        }
+
+        if (playerParry != null)
+        {
+            playerParry.PerfectGuardSucceeded -= HandlePerfectGuardSucceeded;
+            playerParry.PerfectGuardSucceeded += HandlePerfectGuardSucceeded;
+        }
+    }
+
+    private void Start()
+    {
+        NotifyParryChargeChanged();
+    }
+
+    private void OnDisable()
+    {
+        if (playerParry != null)
+        {
+            playerParry.PerfectGuardSucceeded -= HandlePerfectGuardSucceeded;
+        }
+
+        EndGrapple(false);
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
+
+    private void OnValidate()
+    {
+        maximumNeedleCharges = Mathf.Max(1, maximumNeedleCharges);
+        parryHalfUnits = Mathf.Clamp(parryHalfUnits, 0, MaximumParryHalfUnits);
+    }
+
+    private void Update()
     {
         if (Input.GetMouseButtonDown(1))
         {
@@ -68,6 +127,7 @@ public class NeedleSkillManager : MonoBehaviour
     private void FixedUpdate()
     {
         if (!isGrappling) return;
+
         if (grappleNeedle == null || !grappleNeedle.gameObject.activeInHierarchy ||
             (playerStatusEffects != null && playerStatusEffects.BlocksMovement))
         {
@@ -97,75 +157,117 @@ public class NeedleSkillManager : MonoBehaviour
         }
     }
 
-    private void TryThrowNeedle()
+    public bool TryThrowNeedle()
     {
-        if (Time.time < lastFireTime + cooldown) return;
+        if (parryHalfUnits < 2)
+        {
+            OnNeedleThrowDenied?.Invoke();
+            Debug.Log("<color=yellow>[Needle Throw]</color> Charge with two perfect guards first.");
+            return false;
+        }
 
-        lastFireTime = Time.time;
+        if (Time.time < lastFireTime + cooldown)
+        {
+            return false;
+        }
 
-        Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Camera mainCamera = Camera.main;
+        if (mainCamera == null || firePoint == null || needlePool == null)
+        {
+            Debug.LogError("[Needle Throw] Camera, Fire Point, or Needle Pool is missing.");
+            return false;
+        }
+
+        Vector3 mousePos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
         mousePos.z = 0f;
         Vector2 direction = (mousePos - firePoint.position).normalized;
 
         GameObject needleObj = needlePool.Get(firePoint.position, Quaternion.identity);
-        NeedleProjectile needle = needleObj.GetComponent<NeedleProjectile>();
+        if (needleObj == null)
+        {
+            return false;
+        }
 
+        NeedleProjectile needle = needleObj.GetComponent<NeedleProjectile>();
+        if (needle == null)
+        {
+            needlePool.ReturnToPool(needleObj);
+            Debug.LogError("[Needle Throw] Pooled object does not have NeedleProjectile.");
+            return false;
+        }
+
+        lastFireTime = Time.time;
+        ConsumeNeedleCharge();
         needle.Launch(direction, throwSpeed, needleDamage, stunDuration, stunValue, knockbackForce, gameObject);
+        return true;
+    }
+
+    private void HandlePerfectGuardSucceeded()
+    {
+        int nextValue = Mathf.Min(MaximumParryHalfUnits, parryHalfUnits + 1);
+        if (nextValue == parryHalfUnits) return;
+
+        parryHalfUnits = nextValue;
+        NotifyParryChargeChanged();
+    }
+
+    private void ConsumeNeedleCharge()
+    {
+        parryHalfUnits = Mathf.Max(0, parryHalfUnits - 2);
+        NotifyParryChargeChanged();
+    }
+
+    private void NotifyParryChargeChanged()
+    {
+        OnParryChargeChanged?.Invoke(parryHalfUnits, MaximumParryHalfUnits);
     }
 
     public void RegisterNeedle(NeedleProjectile needle)
     {
-        if (!activeNeedles.Contains(needle)) activeNeedles.Add(needle);
+        if (needle != null && !activeNeedles.Contains(needle)) activeNeedles.Add(needle);
     }
 
     public void UnregisterNeedle(NeedleProjectile needle)
     {
-        if (activeNeedles.Contains(needle)) activeNeedles.Remove(needle);
+        activeNeedles.Remove(needle);
     }
 
     private void ExecuteAction()
     {
         if (isGrappling) return;
-        activeNeedles.RemoveAll(n => n == null || !n.gameObject.activeInHierarchy);
 
-        NeedleProjectile enemyNeedle = activeNeedles.Find(n => n.currentState == NeedleProjectile.NeedleState.StuckInEnemy);
+        activeNeedles.RemoveAll(needle => needle == null || !needle.gameObject.activeInHierarchy);
+        NeedleProjectile enemyNeedle = activeNeedles.Find(needle => needle.currentState == NeedleProjectile.NeedleState.StuckInEnemy);
         if (enemyNeedle != null)
         {
             StartGrapple(enemyNeedle);
             return;
         }
 
-        List<NeedleProjectile> groundNeedles = activeNeedles.FindAll(n => n.currentState == NeedleProjectile.NeedleState.StuckInGround);
-        if (groundNeedles.Count >= 2)
+        List<NeedleProjectile> groundNeedles = activeNeedles.FindAll(needle => needle.currentState == NeedleProjectile.NeedleState.StuckInGround);
+        if (groundNeedles.Count < 2) return;
+
+        if (threadTrapPrefab == null)
         {
-            if (threadTrapPrefab == null)
+            Debug.LogError("[Thread Trap] Thread Trap Prefab is not assigned.");
+            return;
+        }
+
+        const float trapDuration = 5f;
+        foreach (NeedleProjectile needle in groundNeedles)
+        {
+            needle.SetAsTrapNode(trapDuration);
+        }
+
+        for (int i = 0; i < groundNeedles.Count - 1; i++)
+        {
+            NeedleProjectile first = groundNeedles[i];
+            NeedleProjectile second = groundNeedles[i + 1];
+            GameObject trapObj = Instantiate(threadTrapPrefab);
+            NeedleThreadTrap trap = trapObj.GetComponent<NeedleThreadTrap>();
+            if (trap != null)
             {
-                Debug.LogError("[에러] Thread Trap Prefab이 할당되지 않았습니다!");
-                return;
-            }
-
-            Debug.Log($"<color=lime>[바늘 액션]</color> {groundNeedles.Count}개의 바늘을 연쇄 연결합니다!");
-
-            float trapDuration = 5f;
-
-            foreach (var needle in groundNeedles)
-            {
-                needle.SetAsTrapNode(trapDuration);
-            }
-
-            for (int i = 0; i < groundNeedles.Count - 1; i++)
-            {
-                NeedleProjectile n1 = groundNeedles[i];
-                NeedleProjectile n2 = groundNeedles[i + 1];
-
-                GameObject trapObj = Instantiate(threadTrapPrefab);
-                NeedleThreadTrap trapScript = trapObj.GetComponent<NeedleThreadTrap>();
-
-                if (trapScript != null)
-                {
-                    //  Setup 함수에 틱 간격(threadTickInterval)을 추가로 넘겨줍니다.
-                    trapScript.Setup(n1.transform.position, n2.transform.position, threadDamage, threadTickInterval, gameObject, trapDuration);
-                }
+                trap.Setup(first.transform.position, second.transform.position, threadDamage, threadTickInterval, gameObject, trapDuration);
             }
         }
     }
@@ -197,10 +299,5 @@ public class NeedleSkillManager : MonoBehaviour
         {
             completedNeedle.ReturnToPool();
         }
-    }
-
-    private void OnDisable()
-    {
-        EndGrapple(false);
     }
 }

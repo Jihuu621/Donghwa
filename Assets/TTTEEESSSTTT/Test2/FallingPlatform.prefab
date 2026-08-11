@@ -14,7 +14,6 @@ GameObject:
   - component: {fileID: 6292067180370910952}
   - component: {fileID: 7777036324008930527}
   - component: {fileID: 5880368328676525715}
-  - component: {fileID: 7275741792185500296}
   m_Layer: 3
   m_Name: FallingPlatform
   m_TagString: Untagged
@@ -200,7 +199,7 @@ HingeJoint2D:
   m_BreakAction: 3
   m_AutoConfigureConnectedAnchor: 1
   m_Anchor: {x: 0, y: 0.47000003}
-  m_ConnectedAnchor: {x: 0.0799942, y: -0.54665124}
+  m_ConnectedAnchor: {x: 3.9989996, y: -1.7419906}
   m_UseConnectedAnchor: 1
   m_UseMotor: 0
   m_Motor:
@@ -210,22 +209,3 @@ HingeJoint2D:
   m_AngleLimits:
     m_LowerAngle: 0
     m_UpperAngle: 359
---- !u!251 &7275741792185500296
-PlatformEffector2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4633073208742601615}
-  m_Enabled: 1
-  m_UseColliderMask: 1
-  m_ColliderMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_RotationalOffset: 0
-  m_UseOneWay: 0
-  m_UseOneWayGrouping: 0
-  m_SurfaceArc: 180
-  m_UseSideFriction: 0
-  m_UseSideBounce: 0
-  m_SideArc: 1

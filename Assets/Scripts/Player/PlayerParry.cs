@@ -1,9 +1,12 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Serialization;
 
 public class PlayerParry : MonoBehaviour
 {
+    public event Action PerfectGuardSucceeded;
+
     private enum GuardState
     {
         Ready,
@@ -148,6 +151,7 @@ public class PlayerParry : MonoBehaviour
             if (CamaraShake.Instance != null) CamaraShake.Instance.Shake();
 
             currentGauge = Mathf.Min(maxGauge, currentGauge + parryReward);
+            PerfectGuardSucceeded?.Invoke();
             /* 패링 히트 게이지 획득 처리 비활성화
             parryHitGauge = Mathf.Min(maxParryHitGauge, parryHitGauge + parryHitGain);
             _lastParryHitTime = Time.time;

@@ -255,18 +255,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &7712345678901234567
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5329500642152477051}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b0f84066256b1154b82f12ecbdbd3a9a, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::EffectManager
 --- !u!4 &5589571593274590829
 Transform:
   m_ObjectHideFlags: 0
@@ -383,6 +371,11 @@ MonoBehaviour:
   dashSpeed: 50
   dashDuration: 0.05
   dashCooldown: 0.6
+  useDashAfterimage: 1
+  dashAfterimageInterval: 0.012
+  dashAfterimageLifetime: 0.3
+  dashAfterimageMinimumDistance: 0.2
+  dashAfterimageColor: {r: 0.39560342, g: 0.51595515, b: 0.6603774, a: 0.72156864}
 --- !u!50 &3277447916287584213
 Rigidbody2D:
   serializedVersion: 5
@@ -611,6 +604,20 @@ MonoBehaviour:
   firePoint: {fileID: 6236815705829189838}
   needlePool: {fileID: 1502939091984489508}
   threadTrapPrefab: {fileID: 7913861884901470611, guid: 6a607b69f64bb984182d3bda66f71309, type: 3}
+  maximumNeedleCharges: 3
+  parryHalfUnits: 0
+--- !u!114 &7712345678901234567
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5329500642152477051}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0f84066256b1154b82f12ecbdbd3a9a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EffectManager
 --- !u!1 &6099017345400449487
 GameObject:
   m_ObjectHideFlags: 0

@@ -42,11 +42,19 @@ public class PlayerController : MonoBehaviour
     public float dashDuration = 0.14f;
     public float dashCooldown = 0.6f;
 
+    [Header("대시 잔상")]
+    public bool useDashAfterimage = true;
+    [Min(0.005f)] public float dashAfterimageInterval = 0.012f;
+    [Min(0.05f)] public float dashAfterimageLifetime = 0.2f;
+    [Min(0.01f)] public float dashAfterimageMinimumDistance = 0.2f;
+    public Color dashAfterimageColor = new Color(0.46f, 0.48f, 0.5f, 0.52f);
+
     // 내부 변수들
     Rigidbody2D rb;
     Collider2D playerCollider;
     Animator anim;
     EffectManager statusEffects;
+    PlayerDashAfterimageTrail dashAfterimageTrail;
     float horizontal;
     bool facingRight = true;
 
@@ -84,6 +92,7 @@ public class PlayerController : MonoBehaviour
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
         rb.gravityScale = gravityScale;
         jumpsRemaining = extraJumps;
+        SetupDashAfterimage();
     }
 
     void Update()
@@ -150,8 +159,7 @@ public class PlayerController : MonoBehaviour
         {
             if (isDashing)
             {
-                isDashing = false;
-                rb.gravityScale = gravityScale;
+                StopDash(true);
             }
             rb.linearVelocity = Vector2.zero;
             return;
@@ -161,8 +169,7 @@ public class PlayerController : MonoBehaviour
         {
             if (isDashing)
             {
-                isDashing = false;
-                dashTimer = 0f;
+                StopDash(false);
             }
             return;
         }
@@ -331,6 +338,16 @@ public class PlayerController : MonoBehaviour
         // 대시 중에는 중력 제거
         rb.gravityScale = 0f;
         rb.linearVelocity = new Vector2((facingRight ? 1f : -1f) * dashSpeed, 0f);
+
+        if (useDashAfterimage && dashAfterimageTrail != null)
+        {
+            dashAfterimageTrail.Configure(
+                dashAfterimageInterval,
+                dashAfterimageLifetime,
+                dashAfterimageMinimumDistance,
+                dashAfterimageColor);
+            dashAfterimageTrail.SetEmitting(true);
+        }
     }
 
     void HandleDash()
@@ -338,9 +355,32 @@ public class PlayerController : MonoBehaviour
         dashTimer -= Time.fixedDeltaTime;
         if (dashTimer <= 0f)
         {
-            isDashing = false;
-            rb.gravityScale = gravityScale;
+            StopDash(true);
         }
+    }
+
+    void SetupDashAfterimage()
+    {
+        dashAfterimageTrail = GetComponent<PlayerDashAfterimageTrail>();
+        if (dashAfterimageTrail == null)
+        {
+            dashAfterimageTrail = gameObject.AddComponent<PlayerDashAfterimageTrail>();
+        }
+
+        dashAfterimageTrail.Configure(
+            dashAfterimageInterval,
+            dashAfterimageLifetime,
+            dashAfterimageMinimumDistance,
+            dashAfterimageColor);
+        dashAfterimageTrail.SetEmitting(false);
+    }
+
+    void StopDash(bool restoreGravity)
+    {
+        isDashing = false;
+        dashTimer = 0f;
+        if (restoreGravity && rb != null) rb.gravityScale = gravityScale;
+        if (dashAfterimageTrail != null) dashAfterimageTrail.SetEmitting(false);
     }
 
     void Flip()
@@ -377,8 +417,7 @@ public class PlayerController : MonoBehaviour
         if (!enabled) return;
 
         externalMomentumTimer = 0f;
-        isDashing = false;
-        dashTimer = 0f;
+        StopDash(false);
     }
 
     public void ReleaseExternalMovementOverride(float momentumDuration)
@@ -387,4 +426,9 @@ public class PlayerController : MonoBehaviour
         externalMomentumTimer = Mathf.Max(0f, momentumDuration);
     }
     public bool FacingRight => facingRight;
+
+    private void OnDisable()
+    {
+        if (dashAfterimageTrail != null) dashAfterimageTrail.SetEmitting(false);
+    }
 }

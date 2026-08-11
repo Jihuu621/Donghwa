@@ -224,6 +224,7 @@ MonoBehaviour:
   DetectRange: 10
   ChaseRange: 15
   AttackRange: 1.5
+  AbovePlayerHorizontalDeadZone: 0.12
   PatrolMoveTimeMin: 1
   PatrolMoveTimeMax: 2.5
   IdleAnimation: Rabbit_Idle

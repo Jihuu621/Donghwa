@@ -18,6 +18,7 @@ public class RabbitSetup : EnemyAIBase
     public float DetectRange = 10f;
     public float ChaseRange = 15f;
     public float AttackRange = 1.5f;
+    [Min(0f)] public float AbovePlayerHorizontalDeadZone = 0.12f;
     [Header("Patrol Timing")]
     public float PatrolMoveTimeMin = 1f;
     public float PatrolMoveTimeMax = 2.5f;
@@ -127,6 +128,11 @@ public class RabbitSetup : EnemyAIBase
         if (Fsm.Player == null) { ChangeState(State.Idle); return; }
         float distance = Vector2.Distance(transform.position, Fsm.Player.position);
         if (distance > ChaseRange) { ChangeState(State.Patrol); return; }
+        if (IsPlayerDirectlyAbove())
+        {
+            Fsm.StopMovement();
+            return;
+        }
         if (distance < AttackRange) { ChangeState(State.Lunge); return; }
         MoveAndHop(Fsm.Player.position.x > transform.position.x ? 1 : -1, Fsm.Data != null ? Fsm.Data.MoveSpeed : 2f);
     }
@@ -136,6 +142,12 @@ public class RabbitSetup : EnemyAIBase
         if (Fsm.Player == null) { ChangeState(State.Idle); return; }
         if (!_isLunging)
         {
+            if (IsPlayerDirectlyAbove())
+            {
+                Fsm.StopMovement();
+                return;
+            }
+
             _stateTimer += Time.deltaTime;
             SetFacing(Fsm.Player.position.x > transform.position.x);
             _hopTimer += Time.deltaTime;
@@ -173,6 +185,14 @@ public class RabbitSetup : EnemyAIBase
         return true;
     }
 
+    private bool IsPlayerDirectlyAbove()
+    {
+        if (Fsm.Player == null) return false;
+
+        Vector2 offset = Fsm.Player.position - transform.position;
+        return offset.y > 0f && Mathf.Abs(offset.x) <= AbovePlayerHorizontalDeadZone;
+    }
+
     private void MoveAndHop(int direction, float speed)
     {
         if (Fsm.Rb == null) return;
@@ -205,5 +225,10 @@ public class RabbitSetup : EnemyAIBase
         float x = Mathf.Max(0.0001f, Mathf.Abs(scale.x));
         scale.x = (DefaultFacingRight ? faceRight : !faceRight) ? x : -x;
         transform.localScale = scale;
+    }
+
+    private void OnValidate()
+    {
+        AbovePlayerHorizontalDeadZone = Mathf.Max(0f, AbovePlayerHorizontalDeadZone);
     }
 }

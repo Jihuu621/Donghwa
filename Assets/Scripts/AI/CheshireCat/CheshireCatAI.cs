@@ -192,6 +192,7 @@ public class CheshireCatAI : EnemyAIBase
     private bool _hasWarnedNoTeleportPosition;
     private Vector2 _fixedTeleportAreaCenter;
     private Collider2D _bodyCollider;
+    private ParticleSystem _bodyParticleSystem;
     private readonly List<CheshireCatClone> _clones = new List<CheshireCatClone>(PatternBCloneCount);
     private readonly List<CheshireCatClone> _clonePool = new List<CheshireCatClone>(PatternBCloneCount);
     private readonly List<Vector2> _patternBOccupiedPositions = new List<Vector2>(PatternBCloneCount + 1);
@@ -248,6 +249,7 @@ public class CheshireCatAI : EnemyAIBase
         Vector2 initialPosition = Fsm.Rb != null ? Fsm.Rb.position : (Vector2)transform.position;
         _fixedTeleportAreaCenter = initialPosition + teleportAreaOffset;
         _bodyCollider = GetComponent<Collider2D>();
+        _bodyParticleSystem = GetComponent<ParticleSystem>();
         _unfilteredContactFilter = ContactFilter2D.noFilter;
         if (Fsm.Player != null)
         {
@@ -394,6 +396,7 @@ public class CheshireCatAI : EnemyAIBase
                 break;
             case State.PatternDActive:
                 SetSmokeForm(true);
+                SetPatternDBodyHidden(true);
                 Fsm.StopAllMovement();
                 BeginPatternDActive();
                 break;
@@ -559,6 +562,7 @@ public class CheshireCatAI : EnemyAIBase
             _patternBOccupiedPositions.Add(position);
         }
 
+        ReleaseAttachedNeedles();
         SetPosition(_patternBOccupiedPositions[0]);
         for (int i = 0; i < PatternBCloneCount; i++)
         {
@@ -934,6 +938,7 @@ public class CheshireCatAI : EnemyAIBase
         if (_stateTimer < smokeDuration) return;
 
         PlayIdleAnimation();
+        SetPatternDBodyHidden(false);
         SetSmokeForm(false);
         ChangeState(State.Recovery);
     }
@@ -1610,6 +1615,16 @@ public class CheshireCatAI : EnemyAIBase
         else transform.position = position;
     }
 
+    private void ReleaseAttachedNeedles()
+    {
+        NeedleProjectile[] attachedNeedles = GetComponentsInChildren<NeedleProjectile>(true);
+        for (int i = 0; i < attachedNeedles.Length; i++)
+        {
+            NeedleProjectile needle = attachedNeedles[i];
+            if (needle != null) needle.ReturnToPool();
+        }
+    }
+
     private void SetupAfterimage()
     {
         if (_afterimageTrail == null)
@@ -1706,6 +1721,7 @@ public class CheshireCatAI : EnemyAIBase
             if (Fsm.Player != null && Vector2.Distance(candidate, Fsm.Player.position) < minimumPlayerDistance) continue;
             if (Physics2D.OverlapCircle(candidate, bodyRadius, teleportObstacleMask) != null) continue;
 
+            ReleaseAttachedNeedles();
             Fsm.StopAllMovement();
             if (Fsm.Rb != null) Fsm.Rb.position = candidate;
             else transform.position = candidate;
@@ -1829,6 +1845,22 @@ public class CheshireCatAI : EnemyAIBase
         IsSmokeForm = enabled;
         if (Fsm.Sr == null) return;
         Fsm.Sr.color = enabled && Fsm.Anim == null ? smokeTint : _normalColor;
+    }
+
+    private void SetPatternDBodyHidden(bool hidden)
+    {
+        if (hidden) ReleaseAttachedNeedles();
+        if (_bodyCollider != null) _bodyCollider.enabled = !hidden;
+        if (_bodyParticleSystem == null) return;
+
+        if (hidden)
+        {
+            _bodyParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+        else
+        {
+            _bodyParticleSystem.Play(true);
+        }
     }
 
     private void PlaySmokeAnimation(int stateHash)

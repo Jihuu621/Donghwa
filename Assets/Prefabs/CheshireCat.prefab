@@ -246,8 +246,10 @@ MonoBehaviour:
   smokeTint: {r: 0.45, g: 0.45, b: 0.45, a: 0.3}
   idleSprite: {fileID: 6214457495015110012, guid: 0f9fdfc0160411d429042954f2d9e1fd, type: 3}
   patternBProjectilePrefab: {fileID: 742100000000000006, guid: 41f37e0d756db7e489388dc87c9b8c0d, type: 3}
-  patternBInitialShotDelay: 1
-  patternBMoveDurationAfterShot: 5
+  patternBInitialShotDelay: 1.25
+  patternBMoveDurationAfterShot: 16
+  patternBPlayerSpawnMinimumDistance: 8
+  patternBActorMinimumSeparation: 6
   patternBMoveSpeed: 3.5
   patternBDirectionIntervalMin: 1.25
   patternBDirectionIntervalMax: 2.5
@@ -255,8 +257,10 @@ MonoBehaviour:
   patternBBoundaryTurnDistance: 1.25
   patternBHomingSpeed: 4.5
   patternBHomingTurnSpeed: 75
-  patternBMainProjectileHealth: 3
-  patternBCloneProjectileHealth: 1
+  patternBMainProjectileSuccessesToDestroy: 3
+  patternBCloneProjectileSuccessesToDestroy: 2
+  patternBProjectileDeflectSpeedMultiplier: 1.4
+  patternBProjectileDeflectHomingDelay: 0.22
   patternBCloneHealth: 1
   patternBCloneParticlesEnabled: 1
   patternBProjectileScaleMultiplier: 3
@@ -265,6 +269,7 @@ MonoBehaviour:
   patternBCloneDebuff: 0
   patternBCloneDebuffDuration: 2
   patternBCloneDebuffValue: 0.3
+  patternCPlayerTeleportMinimumDistance: 8
   patternCRepeatMin: 3
   patternCRepeatMax: 4
   patternCChargeSpeed: 20

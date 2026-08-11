@@ -77,8 +77,10 @@ public class CheshireCatAI : EnemyAIBase
 
     [Header("Pattern B")]
     [SerializeField] private CheshireProjectile patternBProjectilePrefab;
-    [SerializeField, Min(0f)] private float patternBInitialShotDelay = 1f;
-    [SerializeField, Min(0f)] private float patternBMoveDurationAfterShot = 5f;
+    [SerializeField, Min(0f)] private float patternBInitialShotDelay = 1.25f;
+    [SerializeField, Min(0f)] private float patternBMoveDurationAfterShot = 16f;
+    [SerializeField, Min(0f)] private float patternBPlayerSpawnMinimumDistance = 8f;
+    [SerializeField, Min(0.1f)] private float patternBActorMinimumSeparation = 6f;
     [SerializeField, Min(0f)] private float patternBMoveSpeed = 3.5f;
     [SerializeField, Min(0.1f)] private float patternBDirectionIntervalMin = 1.25f;
     [SerializeField, Min(0.1f)] private float patternBDirectionIntervalMax = 2.5f;
@@ -86,8 +88,10 @@ public class CheshireCatAI : EnemyAIBase
     [SerializeField, Min(0f)] private float patternBBoundaryTurnDistance = 1.25f;
     [SerializeField, Min(0.1f)] private float patternBHomingSpeed = 4.5f;
     [SerializeField, Min(0f)] private float patternBHomingTurnSpeed = 75f;
-    [SerializeField, Min(0.1f)] private float patternBMainProjectileHealth = 3f;
-    [SerializeField, Min(0.1f)] private float patternBCloneProjectileHealth = 1f;
+    [SerializeField, Min(1)] private int patternBMainProjectileSuccessesToDestroy = 3;
+    [SerializeField, Min(1)] private int patternBCloneProjectileSuccessesToDestroy = 2;
+    [SerializeField, Min(0f)] private float patternBProjectileDeflectSpeedMultiplier = 1.4f;
+    [SerializeField, Min(0f)] private float patternBProjectileDeflectHomingDelay = 0.22f;
     [SerializeField, Min(0.1f)] private float patternBCloneHealth = 1f;
     [Tooltip("Copy the main body's particle effect to Pattern B clones.")]
     [SerializeField] private bool patternBCloneParticlesEnabled = true;
@@ -101,6 +105,7 @@ public class CheshireCatAI : EnemyAIBase
     [SerializeField, Min(0f)] private float patternBCloneDebuffValue = 0.3f;
 
     [Header("Pattern C - Charge Impact")]
+    [SerializeField, Min(0f)] private float patternCPlayerTeleportMinimumDistance = 8f;
     [SerializeField, Min(1)] private int patternCRepeatMin = 3;
     [SerializeField, Min(1)] private int patternCRepeatMax = 4;
     [SerializeField, Min(0.1f)] private float patternCChargeSpeed = 20f;
@@ -543,15 +548,21 @@ public class CheshireCatAI : EnemyAIBase
         DestroyClonesImmediately();
 
         _patternBOccupiedPositions.Clear();
-        Vector2 mainPosition = FindPatternBPosition(_patternBOccupiedPositions);
-        SetPosition(mainPosition);
-        _patternBOccupiedPositions.Add(mainPosition);
+        for (int i = 0; i <= PatternBCloneCount; i++)
+        {
+            if (!TryFindPatternBPosition(_patternBOccupiedPositions, out Vector2 position))
+            {
+                ChangeState(State.PatternBSmokeEnter);
+                return;
+            }
 
+            _patternBOccupiedPositions.Add(position);
+        }
+
+        SetPosition(_patternBOccupiedPositions[0]);
         for (int i = 0; i < PatternBCloneCount; i++)
         {
-            Vector2 clonePosition = FindPatternBPosition(_patternBOccupiedPositions);
-            _patternBOccupiedPositions.Add(clonePosition);
-            CreateClone(clonePosition, i);
+            CreateClone(_patternBOccupiedPositions[i + 1], i);
         }
 
         ChangeState(State.PatternBSmokeAppear);
@@ -609,7 +620,7 @@ public class CheshireCatAI : EnemyAIBase
 
     private void UpdatePatternCTeleport()
     {
-        TeleportToRandomMapPosition();
+        TeleportToRandomMapPosition(patternCPlayerTeleportMinimumDistance);
         ChangeState(State.PatternCSmokeAppear);
     }
 
@@ -1181,7 +1192,9 @@ public class CheshireCatAI : EnemyAIBase
         direction = Rotate(direction, Random.Range(-18f, 18f));
 
         float damage = fromClone ? 0f : Fsm.Data != null ? Fsm.Data.Damage : 20f;
-        float health = fromClone ? patternBCloneProjectileHealth : patternBMainProjectileHealth;
+        int successesToDestroy = fromClone
+            ? patternBCloneProjectileSuccessesToDestroy
+            : patternBMainProjectileSuccessesToDestroy;
         Color color = fromClone ? patternBCloneProjectileColor : patternBMainProjectileColor;
 
         float scaleMultiplier = patternBProjectilePrefab == null ? patternBProjectileScaleMultiplier : 1f;
@@ -1196,10 +1209,12 @@ public class CheshireCatAI : EnemyAIBase
             patternBHomingSpeed,
             patternBHomingTurnSpeed,
             damage,
-            health,
+            successesToDestroy,
             color,
             fromClone,
-            source);
+            source,
+            patternBProjectileDeflectSpeedMultiplier,
+            patternBProjectileDeflectHomingDelay);
     }
 
     public void SetPatternBCloneDebuff(StatusKeyword keyword, float duration, float value)
@@ -1328,11 +1343,10 @@ public class CheshireCatAI : EnemyAIBase
         if (projectile != null) projectile.gameObject.SetActive(false);
     }
 
-    private Vector2 FindPatternBPosition(List<Vector2> occupiedPositions)
+    private bool TryFindPatternBPosition(List<Vector2> occupiedPositions, out Vector2 position)
     {
         Vector2 halfSize = teleportAreaSize * 0.5f;
         Vector2 center = _fixedTeleportAreaCenter;
-        float separation = Mathf.Max(1f, minimumTeleportDistance * 0.65f);
 
         for (int i = 0; i < teleportSearchAttempts; i++)
         {
@@ -1341,20 +1355,26 @@ public class CheshireCatAI : EnemyAIBase
                 Random.Range(center.y - halfSize.y, center.y + halfSize.y));
 
             if (Physics2D.OverlapCircle(candidate, teleportClearanceRadius, teleportObstacleMask) != null) continue;
+            if (Fsm.Player != null &&
+                Vector2.Distance(candidate, Fsm.Player.position) < patternBPlayerSpawnMinimumDistance) continue;
 
             bool overlapsActor = false;
             for (int j = 0; j < occupiedPositions.Count; j++)
             {
-                if (Vector2.Distance(candidate, occupiedPositions[j]) >= separation) continue;
+                if (Vector2.Distance(candidate, occupiedPositions[j]) >= patternBActorMinimumSeparation) continue;
                 overlapsActor = true;
                 break;
             }
 
-            if (!overlapsActor) return candidate;
+            if (!overlapsActor)
+            {
+                position = candidate;
+                return true;
+            }
         }
 
-        float angle = occupiedPositions.Count * 120f * Mathf.Deg2Rad;
-        return center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * Mathf.Min(halfSize.x, halfSize.y) * 0.5f;
+        position = default;
+        return false;
     }
 
     private void CreateClone(Vector2 position, int index)
@@ -1664,7 +1684,7 @@ public class CheshireCatAI : EnemyAIBase
         return component;
     }
 
-    private void TeleportToRandomMapPosition()
+    private void TeleportToRandomMapPosition(float minimumPlayerDistance = 0f)
     {
         Vector2 halfSize = teleportAreaSize * 0.5f;
         Vector2 center = _fixedTeleportAreaCenter;
@@ -1683,6 +1703,7 @@ public class CheshireCatAI : EnemyAIBase
                 Random.Range(center.y - halfSize.y, center.y + halfSize.y));
 
             if (Vector2.Distance(candidate, currentPosition) < minimumTeleportDistance) continue;
+            if (Fsm.Player != null && Vector2.Distance(candidate, Fsm.Player.position) < minimumPlayerDistance) continue;
             if (Physics2D.OverlapCircle(candidate, bodyRadius, teleportObstacleMask) != null) continue;
 
             Fsm.StopAllMovement();
@@ -1915,6 +1936,8 @@ public class CheshireCatAI : EnemyAIBase
         hoverResponsiveness = Mathf.Max(0.1f, hoverResponsiveness);
         patternBInitialShotDelay = Mathf.Max(0f, patternBInitialShotDelay);
         patternBMoveDurationAfterShot = Mathf.Max(0f, patternBMoveDurationAfterShot);
+        patternBPlayerSpawnMinimumDistance = Mathf.Max(0f, patternBPlayerSpawnMinimumDistance);
+        patternBActorMinimumSeparation = Mathf.Max(0.1f, patternBActorMinimumSeparation);
         patternBMoveSpeed = Mathf.Max(0f, patternBMoveSpeed);
         patternBDirectionIntervalMin = Mathf.Max(0.1f, patternBDirectionIntervalMin);
         patternBDirectionIntervalMax = Mathf.Max(patternBDirectionIntervalMin, patternBDirectionIntervalMax);
@@ -1922,12 +1945,15 @@ public class CheshireCatAI : EnemyAIBase
         patternBBoundaryTurnDistance = Mathf.Max(0f, patternBBoundaryTurnDistance);
         patternBHomingSpeed = Mathf.Max(0.1f, patternBHomingSpeed);
         patternBHomingTurnSpeed = Mathf.Max(0f, patternBHomingTurnSpeed);
-        patternBMainProjectileHealth = Mathf.Max(0.1f, patternBMainProjectileHealth);
-        patternBCloneProjectileHealth = Mathf.Max(0.1f, patternBCloneProjectileHealth);
+        patternBMainProjectileSuccessesToDestroy = Mathf.Max(1, patternBMainProjectileSuccessesToDestroy);
+        patternBCloneProjectileSuccessesToDestroy = Mathf.Max(1, patternBCloneProjectileSuccessesToDestroy);
+        patternBProjectileDeflectSpeedMultiplier = Mathf.Max(0f, patternBProjectileDeflectSpeedMultiplier);
+        patternBProjectileDeflectHomingDelay = Mathf.Max(0f, patternBProjectileDeflectHomingDelay);
         patternBCloneHealth = Mathf.Max(0.1f, patternBCloneHealth);
         patternBCloneDebuffDuration = Mathf.Max(0.1f, patternBCloneDebuffDuration);
         patternBCloneDebuffValue = Mathf.Max(0f, patternBCloneDebuffValue);
         patternBProjectileScaleMultiplier = Mathf.Max(0.1f, patternBProjectileScaleMultiplier);
+        patternCPlayerTeleportMinimumDistance = Mathf.Max(0f, patternCPlayerTeleportMinimumDistance);
         patternCRepeatMin = Mathf.Max(1, patternCRepeatMin);
         patternCRepeatMax = Mathf.Max(patternCRepeatMin, patternCRepeatMax);
         patternCChargeSpeed = Mathf.Max(0.1f, patternCChargeSpeed);

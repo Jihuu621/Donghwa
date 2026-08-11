@@ -1,38 +1,55 @@
 using UnityEngine;
 using System.Collections.Generic;
-using DG.Tweening;
 
 [RequireComponent(typeof(SimplePool))]
 public class NeedleSkillManager : MonoBehaviour
 {
     public static NeedleSkillManager Instance;
 
-    [Header("½ºÅ³ ¼³Á¤")]
+    [Header("ìŠ¤í‚¬ ì„¤ì •")]
     public float cooldown = 1f;
     public float throwSpeed = 30f;
 
-    [Header("µ¥¹ÌÁö ¹× È¿°ú ¼³Á¤")]
+    [Header("ë°ë¯¸ì§€ ë° íš¨ê³¼ ì„¤ì •")]
     public float needleDamage = 15f;
     public float stunDuration = 1.5f;
     public float stunValue = 1f;
     public float knockbackForce = 3f;
 
-    [Header("ÇÔÁ¤(½Ç) Áö¼Ó µ¥¹ÌÁö ¼³Á¤")]
-    public float threadDamage = 10f; // Æ½´ç µ¥¹ÌÁö (¼öÄ¡¸¦ Á¶±İ ³·Ãß´Â °É ÃßÃµÇÕ´Ï´Ù)
-    public float threadTickInterval = 0.5f; // 0.5ÃÊ¸¶´Ù Áö¼Ó µ¥¹ÌÁö
+    [Header("ì  ë°”ëŠ˜ ê·¸ë˜í”Œ")]
+    public float grappleAcceleration = 120f;
+    public float grappleMaxSpeed = 28f;
+    public float grappleReleaseDistance = 1.2f;
+    public float grappleMaxDuration = 1.1f;
+    [Range(0f, 1f)] public float grappleGravityMultiplier = 0.35f;
+    public float grappleMomentumDuration = 0.18f;
 
-    [Header("ÇÁ¸®ÆÕ ÂüÁ¶")]
+    [Header("í•¨ì •(ì‹¤) ì§€ì† ë°ë¯¸ì§€ ì„¤ì •")]
+    public float threadDamage = 10f; // í‹±ë‹¹ ë°ë¯¸ì§€ (ìˆ˜ì¹˜ë¥¼ ì¡°ê¸ˆ ë‚®ì¶”ëŠ” ê±¸ ì¶”ì²œí•©ë‹ˆë‹¤)
+    public float threadTickInterval = 0.5f; // 0.5ì´ˆë§ˆë‹¤ ì§€ì† ë°ë¯¸ì§€
+
+    [Header("í”„ë¦¬íŒ¹ ì°¸ì¡°")]
     public Transform firePoint;
     public SimplePool needlePool;
     public GameObject threadTrapPrefab;
 
     private float lastFireTime = -999f;
     private List<NeedleProjectile> activeNeedles = new List<NeedleProjectile>();
+    private Rigidbody2D playerRigidbody;
+    private PlayerController playerController;
+    private EffectManager playerStatusEffects;
+    private NeedleProjectile grappleNeedle;
+    private float grappleTimer;
+    private float originalGravityScale;
+    private bool isGrappling;
 
     private void Awake()
     {
         Instance = this;
         needlePool = GetComponent<SimplePool>();
+        playerRigidbody = GetComponent<Rigidbody2D>();
+        playerController = GetComponent<PlayerController>();
+        playerStatusEffects = GetComponent<EffectManager>();
     }
 
     void Update()
@@ -45,6 +62,38 @@ public class NeedleSkillManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.E))
         {
             ExecuteAction();
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        if (!isGrappling) return;
+        if (grappleNeedle == null || !grappleNeedle.gameObject.activeInHierarchy ||
+            (playerStatusEffects != null && playerStatusEffects.BlocksMovement))
+        {
+            EndGrapple(false);
+            return;
+        }
+
+        Vector2 toNeedle = (Vector2)grappleNeedle.transform.position - playerRigidbody.position;
+        float distance = toNeedle.magnitude;
+        grappleTimer += Time.fixedDeltaTime;
+        if (distance <= grappleReleaseDistance || grappleTimer >= grappleMaxDuration)
+        {
+            EndGrapple(true);
+            return;
+        }
+
+        Vector2 direction = toNeedle / distance;
+        float pullSpeed = Vector2.Dot(playerRigidbody.linearVelocity, direction);
+        if (pullSpeed < grappleMaxSpeed)
+        {
+            playerRigidbody.AddForce(direction * grappleAcceleration, ForceMode2D.Force);
+        }
+
+        if (playerRigidbody.linearVelocity.sqrMagnitude > grappleMaxSpeed * grappleMaxSpeed)
+        {
+            playerRigidbody.linearVelocity = playerRigidbody.linearVelocity.normalized * grappleMaxSpeed;
         }
     }
 
@@ -76,14 +125,13 @@ public class NeedleSkillManager : MonoBehaviour
 
     private void ExecuteAction()
     {
+        if (isGrappling) return;
         activeNeedles.RemoveAll(n => n == null || !n.gameObject.activeInHierarchy);
 
         NeedleProjectile enemyNeedle = activeNeedles.Find(n => n.currentState == NeedleProjectile.NeedleState.StuckInEnemy);
         if (enemyNeedle != null)
         {
-            Debug.Log("<color=lime>[¹Ù´Ã ¾×¼Ç]</color> Àû¿¡°Ô ³¯¾Æ°©´Ï´Ù!");
-            transform.DOMove(enemyNeedle.transform.position, 0.25f).SetEase(Ease.OutQuad);
-            enemyNeedle.ReturnToPool();
+            StartGrapple(enemyNeedle);
             return;
         }
 
@@ -92,11 +140,11 @@ public class NeedleSkillManager : MonoBehaviour
         {
             if (threadTrapPrefab == null)
             {
-                Debug.LogError("[¿¡·¯] Thread Trap PrefabÀÌ ÇÒ´çµÇÁö ¾Ê¾Ò½À´Ï´Ù!");
+                Debug.LogError("[ì—ëŸ¬] Thread Trap Prefabì´ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤!");
                 return;
             }
 
-            Debug.Log($"<color=lime>[¹Ù´Ã ¾×¼Ç]</color> {groundNeedles.Count}°³ÀÇ ¹Ù´ÃÀ» ¿¬¼â ¿¬°áÇÕ´Ï´Ù!");
+            Debug.Log($"<color=lime>[ë°”ëŠ˜ ì•¡ì…˜]</color> {groundNeedles.Count}ê°œì˜ ë°”ëŠ˜ì„ ì—°ì‡„ ì—°ê²°í•©ë‹ˆë‹¤!");
 
             float trapDuration = 5f;
 
@@ -115,10 +163,44 @@ public class NeedleSkillManager : MonoBehaviour
 
                 if (trapScript != null)
                 {
-                    //  Setup ÇÔ¼ö¿¡ Æ½ °£°İ(threadTickInterval)À» Ãß°¡·Î ³Ñ°ÜÁİ´Ï´Ù.
+                    //  Setup í•¨ìˆ˜ì— í‹± ê°„ê²©(threadTickInterval)ì„ ì¶”ê°€ë¡œ ë„˜ê²¨ì¤ë‹ˆë‹¤.
                     trapScript.Setup(n1.transform.position, n2.transform.position, threadDamage, threadTickInterval, gameObject, trapDuration);
                 }
             }
         }
+    }
+
+    private void StartGrapple(NeedleProjectile targetNeedle)
+    {
+        if (playerRigidbody == null || targetNeedle == null) return;
+
+        grappleNeedle = targetNeedle;
+        grappleTimer = 0f;
+        isGrappling = true;
+        originalGravityScale = playerRigidbody.gravityScale;
+        playerRigidbody.gravityScale = originalGravityScale * grappleGravityMultiplier;
+        playerController?.SetExternalMovementOverride(true);
+    }
+
+    private void EndGrapple(bool consumeNeedle)
+    {
+        if (!isGrappling) return;
+
+        isGrappling = false;
+        if (playerRigidbody != null) playerRigidbody.gravityScale = originalGravityScale;
+        if (consumeNeedle) playerController?.ReleaseExternalMovementOverride(grappleMomentumDuration);
+        else playerController?.SetExternalMovementOverride(false);
+
+        NeedleProjectile completedNeedle = grappleNeedle;
+        grappleNeedle = null;
+        if (consumeNeedle && completedNeedle != null && completedNeedle.gameObject.activeInHierarchy)
+        {
+            completedNeedle.ReturnToPool();
+        }
+    }
+
+    private void OnDisable()
+    {
+        EndGrapple(false);
     }
 }

@@ -14,7 +14,10 @@ public class CheshireProjectile : MonoBehaviour, IDamageable
     private float _damage;
     private float _speed;
     private float _turnSpeed;
-    private float _health = 1f;
+    private int _remainingSuccessesToDestroy = 1;
+    private float _deflectSpeedMultiplier = 1f;
+    private float _deflectHomingDelay;
+    private float _homingPauseTimer;
     private bool _requestsCloneDebuff;
     private bool _hasHit;
     private float _remainingLifetime;
@@ -53,7 +56,10 @@ public class CheshireProjectile : MonoBehaviour, IDamageable
         _homingTarget = null;
         _speed = speed;
         _turnSpeed = 0f;
-        _health = 1f;
+        _remainingSuccessesToDestroy = 1;
+        _deflectSpeedMultiplier = 1f;
+        _deflectHomingDelay = 0f;
+        _homingPauseTimer = 0f;
         _requestsCloneDebuff = false;
         _hasHit = false;
         _remainingLifetime = lifetime;
@@ -68,22 +74,32 @@ public class CheshireProjectile : MonoBehaviour, IDamageable
         float speed,
         float turnSpeed,
         float damage,
-        float health,
+        int successesToDestroy,
         Color color,
         bool requestsCloneDebuff,
-        GameObject source)
+        GameObject source,
+        float deflectSpeedMultiplier,
+        float deflectHomingDelay)
     {
         Launch(initialDirection, speed, damage, source);
         _homingTarget = target;
         _turnSpeed = Mathf.Max(0f, turnSpeed);
-        _health = Mathf.Max(0.1f, health);
+        _remainingSuccessesToDestroy = Mathf.Max(1, successesToDestroy);
+        _deflectSpeedMultiplier = Mathf.Max(0f, deflectSpeedMultiplier);
+        _homingPauseTimer = 0f;
         _requestsCloneDebuff = requestsCloneDebuff;
+        _deflectHomingDelay = Mathf.Max(0f, deflectHomingDelay);
         ApplyColor(color);
     }
 
     private void FixedUpdate()
     {
         if (_homingTarget == null || _turnSpeed <= 0f || _hasHit) return;
+        if (_homingPauseTimer > 0f)
+        {
+            _homingPauseTimer = Mathf.Max(0f, _homingPauseTimer - Time.fixedDeltaTime);
+            return;
+        }
 
         Vector2 currentDirection = _rigidbody.linearVelocity.normalized;
         Vector2 desiredDirection = ((Vector2)_homingTarget.position - _rigidbody.position).normalized;
@@ -105,6 +121,15 @@ public class CheshireProjectile : MonoBehaviour, IDamageable
         Transform root = other.transform.root;
         if (other.CompareTag("Player") || root.CompareTag("Player"))
         {
+            PlayerParry parry = other.GetComponentInParent<PlayerParry>();
+            if (parry != null && (parry.IsParryTime || parry.IsGuardTime))
+            {
+                IDamageable guardedTarget = other.GetComponentInParent<IDamageable>();
+                guardedTarget?.TakeDamage(_damage, _source);
+                RegisterDefenseSuccess(root.position);
+                return;
+            }
+
             if (_requestsCloneDebuff)
             {
                 _hasHit = true;
@@ -132,11 +157,33 @@ public class CheshireProjectile : MonoBehaviour, IDamageable
     public void TakeDamage(float damage, GameObject source)
     {
         if (_hasHit || damage <= 0f) return;
-        _health -= damage;
-        if (_health > 0f) return;
+        Vector2 defenderPosition = source != null ? source.transform.position : transform.position;
+        RegisterDefenseSuccess(defenderPosition);
+    }
 
-        _hasHit = true;
-        Despawn();
+    private void RegisterDefenseSuccess(Vector2 defenderPosition)
+    {
+        if (_hasHit) return;
+
+        _remainingSuccessesToDestroy--;
+        if (_remainingSuccessesToDestroy <= 0)
+        {
+            _hasHit = true;
+            Despawn();
+            return;
+        }
+
+        Vector2 deflectDirection = (Vector2)transform.position - defenderPosition;
+        if (deflectDirection.sqrMagnitude < 0.01f)
+        {
+            deflectDirection = -_rigidbody.linearVelocity;
+        }
+        if (deflectDirection.sqrMagnitude < 0.01f) deflectDirection = Vector2.right;
+
+        deflectDirection.Normalize();
+        _rigidbody.linearVelocity = deflectDirection * _speed * _deflectSpeedMultiplier;
+        transform.up = deflectDirection;
+        _homingPauseTimer = _deflectHomingDelay;
     }
 
     private void ApplyColor(Color color)

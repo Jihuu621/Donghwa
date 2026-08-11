@@ -601,6 +601,12 @@ MonoBehaviour:
   stunDuration: 1.5
   stunValue: 1
   knockbackForce: 3
+  grappleAcceleration: 120
+  grappleMaxSpeed: 28
+  grappleReleaseDistance: 1.2
+  grappleMaxDuration: 1.1
+  grappleGravityMultiplier: 0.35
+  grappleMomentumDuration: 0.18
   threadDamage: 30
   threadTickInterval: 0.5
   firePoint: {fileID: 6236815705829189838}

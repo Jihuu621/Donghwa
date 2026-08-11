@@ -187,6 +187,7 @@ public class CheshireCatClone : MonoBehaviour, IDamageable
     {
         if (!gameObject.activeSelf) return;
 
+        ReleaseAttachedNeedles();
         _active = false;
         _ending = false;
         _deactivationTimer = 0f;
@@ -202,6 +203,16 @@ public class CheshireCatClone : MonoBehaviour, IDamageable
         CheshireCatAI owner = _owner;
         gameObject.SetActive(false);
         if (owner != null) owner.NotifyCloneReleased(this);
+    }
+
+    private void ReleaseAttachedNeedles()
+    {
+        NeedleProjectile[] attachedNeedles = GetComponentsInChildren<NeedleProjectile>(true);
+        for (int i = 0; i < attachedNeedles.Length; i++)
+        {
+            NeedleProjectile needle = attachedNeedles[i];
+            if (needle != null) needle.ReturnToPool();
+        }
     }
 
     private void PickMoveDirection()

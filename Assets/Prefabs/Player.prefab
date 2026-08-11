@@ -364,7 +364,6 @@ MonoBehaviour:
   deceleration: 60
   velPower: 0.9
   jumpForce: 18
-  jumpCutMultiplier: 0.5
   extraJumps: 0
   gravityScale: 3
   fallGravityMultiplier: 2.5

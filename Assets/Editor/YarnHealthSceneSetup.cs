@@ -55,6 +55,18 @@ internal static class YarnHealthSceneSetup
         Build(scene, true);
     }
 
+    public static void RebuildUiTestFromCommandLine()
+    {
+        Scene scene = EditorSceneManager.OpenScene(TargetScenePath, OpenSceneMode.Single);
+        GameObject existing = scene.GetRootGameObjects().FirstOrDefault(root => root.name == CanvasName);
+        if (existing != null)
+        {
+            UnityEngine.Object.DestroyImmediate(existing);
+        }
+
+        Build(scene, false);
+    }
+
     private static void TryAutomaticSetup()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating)
@@ -243,6 +255,7 @@ internal static class YarnHealthSceneSetup
             UnityEventTools.AddPersistentListener(resetButton.onClick, demo.ResetHealth);
 
             CreateParryNeedleGauge(canvasObject.transform, needleSkill);
+            CreatePauseMenu(canvasObject, canvasObject.transform);
 
             EnsureEventSystem();
             EditorSceneManager.MoveGameObjectToScene(canvasObject, scene);
@@ -255,6 +268,69 @@ internal static class YarnHealthSceneSetup
         {
             Debug.LogException(exception);
         }
+    }
+
+    private static void CreatePauseMenu(GameObject canvasObject, Transform canvasTransform)
+    {
+        RectTransform overlay = CreateRect("PauseMenuOverlay", canvasTransform);
+        SetStretch(overlay);
+        Image dimmer = overlay.gameObject.AddComponent<Image>();
+        dimmer.color = new Color(0.01f, 0.008f, 0.02f, 0.78f);
+        dimmer.raycastTarget = true;
+
+        RectTransform panel = CreateRect("PausePanel", overlay);
+        SetCentered(panel, new Vector2(500f, 320f));
+        Image panelImage = panel.gameObject.AddComponent<Image>();
+        panelImage.color = new Color(0.055f, 0.035f, 0.075f, 0.98f);
+
+        Shadow panelShadow = panel.gameObject.AddComponent<Shadow>();
+        panelShadow.effectColor = new Color(0f, 0f, 0f, 0.7f);
+        panelShadow.effectDistance = new Vector2(10f, -10f);
+
+        RectTransform accent = CreateRect("PauseAccent", panel);
+        SetTopStretch(accent, 0f, 5f);
+        Image accentImage = accent.gameObject.AddComponent<Image>();
+        accentImage.color = new Color(0.92f, 0.13f, 0.18f, 1f);
+        accentImage.raycastTarget = false;
+
+        TextMeshProUGUI title = CreateText(
+            "PauseTitle",
+            panel,
+            "PAUSED",
+            40f,
+            FontStyles.Bold,
+            new Color(1f, 0.78f, 0.52f, 1f),
+            TextAlignmentOptions.Center);
+        SetFixedTopLeft(title.rectTransform, new Vector2(40f, -62f), new Vector2(420f, 58f));
+        title.characterSpacing = 6f;
+
+        TextMeshProUGUI detail = CreateText(
+            "PauseDetail",
+            panel,
+            "UI TEST IS PAUSED",
+            15f,
+            FontStyles.Bold,
+            new Color(0.82f, 0.76f, 0.82f, 1f),
+            TextAlignmentOptions.Center);
+        SetFixedTopLeft(detail.rectTransform, new Vector2(40f, -126f), new Vector2(420f, 28f));
+        detail.characterSpacing = 2f;
+
+        PauseMenuController controller = canvasObject.GetComponent<PauseMenuController>();
+        if (controller == null)
+        {
+            controller = canvasObject.AddComponent<PauseMenuController>();
+        }
+
+        Button mainMenuButton = CreateButton(panel, "MainMenuButton", "MAIN MENU", new Vector2(95f, -192f), new Color(0.72f, 0.10f, 0.14f, 1f));
+        mainMenuButton.GetComponent<RectTransform>().sizeDelta = new Vector2(310f, 48f);
+        UnityEventTools.AddPersistentListener(mainMenuButton.onClick, controller.ReturnToMainMenu);
+
+        Button closeButton = CreateButton(panel, "ClosePauseButton", "X", new Vector2(438f, -16f), new Color(0.28f, 0.12f, 0.2f, 1f));
+        closeButton.GetComponent<RectTransform>().sizeDelta = new Vector2(46f, 42f);
+        UnityEventTools.AddPersistentListener(closeButton.onClick, controller.CloseMenu);
+
+        controller.Configure(overlay.gameObject, "MainScene");
+        overlay.gameObject.SetActive(false);
     }
 
     private static void CreateParryNeedleGauge(Transform canvasTransform, NeedleSkillManager needleSkill)
@@ -494,6 +570,15 @@ internal static class YarnHealthSceneSetup
         rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
         rect.anchoredPosition = anchoredPosition;
+        rect.sizeDelta = size;
+    }
+
+    private static void SetCentered(RectTransform rect, Vector2 size)
+    {
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
         rect.sizeDelta = size;
     }
 

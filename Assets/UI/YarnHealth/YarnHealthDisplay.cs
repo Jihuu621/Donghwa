@@ -7,7 +7,7 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class YarnHealthDisplay : MonoBehaviour
 {
-    public const int CurrentViewVersion = 4;
+    public const int CurrentViewVersion = 6;
 
     [Header("Health Source")]
     [SerializeField] private Health targetHealth;

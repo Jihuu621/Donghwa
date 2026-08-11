@@ -13,7 +13,6 @@ public class PlayerController : MonoBehaviour
 
     [Header("점프")]
     public float jumpForce = 18f;
-    public float jumpCutMultiplier = 0.5f;
     public int extraJumps = 0;
 
     [Header("점프 보정")]
@@ -115,15 +114,6 @@ public class PlayerController : MonoBehaviour
         else
         {
             jumpBufferTimer -= Time.deltaTime;
-        }
-
-        if (Input.GetButtonUp("Jump"))
-        {
-            // 가변 점프: 점프 중간에 떼면 속도 줄이기
-            if (rb.linearVelocity.y > 0f)
-            {
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * jumpCutMultiplier);
-            }
         }
 
         // 대시 입력

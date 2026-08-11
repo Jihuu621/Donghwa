@@ -14,6 +14,7 @@ public class CheshireCatClone : MonoBehaviour, IDamageable
     private Collider2D _collider;
     private Animator _animator;
     private CheshireAfterimageTrail _afterimageTrail;
+    private ParticleSystem _particleSystem;
     private Vector2 _areaCenter;
     private Vector2 _areaSize;
     private Vector2 _moveDirection;
@@ -28,6 +29,7 @@ public class CheshireCatClone : MonoBehaviour, IDamageable
     private float _health;
     private bool _active;
     private bool _ending;
+    private float _deactivationTimer;
 
     private void Awake()
     {
@@ -36,6 +38,7 @@ public class CheshireCatClone : MonoBehaviour, IDamageable
         _collider = GetComponent<Collider2D>();
         _animator = GetComponent<Animator>();
         _afterimageTrail = GetComponent<CheshireAfterimageTrail>();
+        _particleSystem = GetComponent<ParticleSystem>();
     }
 
     public void Configure(
@@ -60,17 +63,32 @@ public class CheshireCatClone : MonoBehaviour, IDamageable
         _turnSmoothTime = Mathf.Max(0.01f, turnSmoothTime);
         _boundaryTurnDistance = Mathf.Max(0f, boundaryTurnDistance);
         _activationTimer = Mathf.Max(0f, revealDuration);
+        _deactivationTimer = 0f;
+        _active = false;
+        _ending = false;
+        _velocitySmooth = Vector2.zero;
+        _rigidbody.linearVelocity = Vector2.zero;
         _collider.enabled = false;
         if (_afterimageTrail != null) _afterimageTrail.SetEmitting(false);
+        if (_particleSystem != null)
+        {
+            _particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            _particleSystem.Play(true);
+        }
         PlayAnimation(TeleportAppearAnimationState, revealDuration);
     }
 
     private void Update()
     {
-        if (_ending) return;
+        if (_ending)
+        {
+            _deactivationTimer -= Time.deltaTime;
+            if (_deactivationTimer <= 0f) DeactivateImmediately();
+            return;
+        }
         if (_owner == null)
         {
-            Destroy(gameObject);
+            DeactivateImmediately();
             return;
         }
 
@@ -142,7 +160,7 @@ public class CheshireCatClone : MonoBehaviour, IDamageable
         if (_afterimageTrail != null) _afterimageTrail.SetEmitting(false);
         _rigidbody.linearVelocity = Vector2.zero;
         PlayAnimation(TeleportAnimationState, duration);
-        Destroy(gameObject, Mathf.Max(0.01f, duration));
+        _deactivationTimer = Mathf.Max(0.01f, duration);
     }
 
     public void FireProjectile()
@@ -162,7 +180,28 @@ public class CheshireCatClone : MonoBehaviour, IDamageable
     {
         if (!_active || _ending || damage <= 0f) return;
         _health -= damage;
-        if (_health <= 0f) Destroy(gameObject);
+        if (_health <= 0f) DeactivateImmediately();
+    }
+
+    public void DeactivateImmediately()
+    {
+        if (!gameObject.activeSelf) return;
+
+        _active = false;
+        _ending = false;
+        _deactivationTimer = 0f;
+        _collider.enabled = false;
+        _rigidbody.linearVelocity = Vector2.zero;
+        _velocitySmooth = Vector2.zero;
+        if (_afterimageTrail != null) _afterimageTrail.SetEmitting(false);
+        if (_particleSystem != null)
+        {
+            _particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        CheshireCatAI owner = _owner;
+        gameObject.SetActive(false);
+        if (owner != null) owner.NotifyCloneReleased(this);
     }
 
     private void PickMoveDirection()

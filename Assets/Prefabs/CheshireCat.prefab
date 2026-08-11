@@ -234,10 +234,9 @@ MonoBehaviour:
   projectileSpeed: 15
   diagonalAngle: 15
   meleeTriggerRange: 4
-  scratchHitRange: 1.8
   scratchWindupDuration: 0.5
   scratchDashDuration: 0.35
-  scratchDashSpeed: 30
+  scratchDashDistance: 3.25
   hoverHorizontalAmplitude: 0.55
   hoverVerticalAmplitude: 0.75
   hoverDirectionIntervalMin: 0.45
@@ -292,10 +291,39 @@ MonoBehaviour:
   patternCGroggyTint: {r: 1, g: 0.82, b: 0.25, a: 1}
   patternCShockwaveVisualDuration: 0.4
   patternCShockwaveColor: {r: 0.35, g: 0.9, b: 1, a: 0.9}
+  patternDDuration: 14
+  patternDHazardSpawnInterval: 0.38
+  patternDSpecialSpawnInterval: 0.7
+  patternDTargetAppearanceMin: 5
+  patternDTargetAppearanceMax: 7
+  patternDFakeAppearanceMin: 5
+  patternDFakeAppearanceMax: 7
+  patternDRequiredTargetCuts: 3
+  patternDFakeCutsToFail: 2
+  patternDFallingObjectDamage: 10
+  patternDFakeCutDamage: 20
+  patternDSpawnHeightOffset: 4
+  patternDDespawnPadding: 2
+  patternDSpawnWidthMultiplier: 1.35
+  patternDFallSpeedMin: 4
+  patternDFallSpeedMax: 7
+  patternDHorizontalDrift: 2.2
+  patternDAngularSpeed: 120
+  patternDObjectScale: 1
+  patternDCutParticleBurstCount: 10
+  patternDFakePinkChance: 0.5
+  patternDHazardParticleColor: {r: 0.68, g: 0.72, b: 0.78, a: 0.72}
+  patternDTargetParticleColor: {r: 1, g: 0.2, b: 0.62, a: 0.95}
+  patternDFakeParticleColor: {r: 0.58, g: 0.18, b: 0.9, a: 0.95}
+  patternDFakePinkParticleColor: {r: 0.9, g: 0.16, b: 0.72, a: 0.95}
   afterimageInterval: 0.14
   afterimageLifetime: 0.32
   afterimageMinimumDistance: 0.25
   afterimageColor: {r: 0.75, g: 0.9, b: 1, a: 0.16}
+  projectilePoolSize: 24
+  patternBProjectilePoolSize: 3
+  patternDFallingObjectPoolSize: 32
+  debugStartWithPatternD: 0
 --- !u!95 &1932847501932847510
 Animator:
   serializedVersion: 7

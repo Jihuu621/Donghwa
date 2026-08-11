@@ -1,15 +1,20 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+public interface IScissorCutTarget
+{
+    bool TryScissorCut(Vector2 start, Vector2 end);
+}
+
 [RequireComponent(typeof(LineRenderer))]
 public class VisualScissor : MonoBehaviour
 {
-    [Header("°¡À§ Àı´Ü¼± ¼³Á¤")]
+    [Header("ê°€ìœ„ ì ˆë‹¨ì„  ì„¤ì •")]
     public Material defaultSpriteMaterial;
     public Color lineColor = Color.red;
     public float lineWidth = 0.05f;
 
-    [Header("°¡À§ Ä¿¼­ ¼³Á¤")]
+    [Header("ê°€ìœ„ ì»¤ì„œ ì„¤ì •")]
     public Texture2D scissorCursorTexture;
     public Vector2 cursorHotspot = Vector2.zero;
 
@@ -18,6 +23,9 @@ public class VisualScissor : MonoBehaviour
     private bool isDragging = false;
     private Vector2 dragStart;
     private Vector2 dragEnd;
+    private readonly RaycastHit2D[] snipHits = new RaycastHit2D[64];
+    private readonly HashSet<IScissorCutTarget> snippedTargets = new HashSet<IScissorCutTarget>();
+    private ContactFilter2D snipContactFilter;
 
     void Awake()
     {
@@ -27,18 +35,19 @@ public class VisualScissor : MonoBehaviour
         lineRenderer.useWorldSpace = true;
         lineRenderer.positionCount = 0;
 
-        // °£´ÜÇÑ ½ºÇÁ¶óÀÌÆ®¿ë ¸ÓÆ¼¸®¾ó Àû¿ë
+        // ê°„ë‹¨í•œ ìŠ¤í”„ë¼ì´íŠ¸ìš© ë¨¸í‹°ë¦¬ì–¼ ì ìš©
         if (lineRenderer.material == null)
         {
             lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
         }
         lineRenderer.startColor = lineColor;
         lineRenderer.endColor = lineColor;
+        snipContactFilter = ContactFilter2D.noFilter;
     }
 
     void Update()
     {
-        // °¡À§ ¸ğµå
+        // ê°€ìœ„ ëª¨ë“œ
         if (Input.GetKeyDown(KeyCode.Slash))
         {
             ToggleScissorMode();
@@ -46,7 +55,7 @@ public class VisualScissor : MonoBehaviour
 
         if (!isScissorMode) return;
 
-        // ¸¶¿ì½º ¿À¸¥ÂÊ ¹öÆ° µå·¡±×½Ã ½ÃÀÛ
+        // ë§ˆìš°ìŠ¤ ì˜¤ë¥¸ìª½ ë²„íŠ¼ ë“œë˜ê·¸ì‹œ ì‹œì‘
         if (Input.GetMouseButtonDown(1))
         {
             isDragging = true;
@@ -56,7 +65,7 @@ public class VisualScissor : MonoBehaviour
             lineRenderer.SetPosition(0, new Vector3(dragStart.x, dragStart.y, 0));
         }
 
-        //¼± ½Ã°¢È­
+        //ì„  ì‹œê°í™”
         if (isDragging && Input.GetMouseButton(1))
         {
             dragEnd = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -64,11 +73,11 @@ public class VisualScissor : MonoBehaviour
             Debug.DrawLine(dragStart, dragEnd, Color.red);
         }
 
-        // ¸¶¿ì½º ¹öÆ°À» ¶¼¸é ÀÚ¸£±â
+        // ë§ˆìš°ìŠ¤ ë²„íŠ¼ì„ ë–¼ë©´ ìë¥´ê¸°
         if (isDragging && Input.GetMouseButtonUp(1))
         {
             dragEnd = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            lineRenderer.positionCount = 0; // ¼± Á¦°Å
+            lineRenderer.positionCount = 0; // ì„  ì œê±°
 
             Snip(dragStart, dragEnd);
             isDragging = false;
@@ -99,14 +108,22 @@ public class VisualScissor : MonoBehaviour
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     }
 
-    void Snip(Vector2 start, Vector2 end) // ¼±¿¡ ´ê¾ÆÀÖ´Â ¹°Ã¼Áß SliceableÄÄÆ÷³ÍÆ® ÀÖ´Â°Å Á¶°¢À¸·Î ³ª´©±â ½ÇÇàÄÚµå
+    void Snip(Vector2 start, Vector2 end) // ì„ ì— ë‹¿ì•„ìˆëŠ” ë¬¼ì²´ì¤‘ Sliceableì»´í¬ë„ŒíŠ¸ ìˆëŠ”ê±° ì¡°ê°ìœ¼ë¡œ ë‚˜ëˆ„ê¸° ì‹¤í–‰ì½”ë“œ
     {
         if (Vector2.Distance(start, end) < 0.1f) return;
 
-        RaycastHit2D[] hits = Physics2D.LinecastAll(start, end);
+        snippedTargets.Clear();
+        int hitCount = Physics2D.Linecast(start, end, snipContactFilter, snipHits);
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit2D hit = snipHits[i];
+            IScissorCutTarget cutTarget = hit.collider.GetComponentInParent<IScissorCutTarget>();
+            if (cutTarget != null)
+            {
+                if (snippedTargets.Add(cutTarget)) cutTarget.TryScissorCut(start, end);
+                continue;
+            }
 
-        foreach (var hit in hits)
-        {   
             Sliceable target = hit.collider.GetComponent<Sliceable>();
             PolygonCollider2D poly = hit.collider as PolygonCollider2D;
 
@@ -134,7 +151,7 @@ public class VisualScissor : MonoBehaviour
 
                     if (tex != null)
                     {
-                        // ¿ŞÂÊ Á¶°¢°ú ¿À¸¥ÂÊ Á¶°¢ »ı¼º
+                        // ì™¼ìª½ ì¡°ê°ê³¼ ì˜¤ë¥¸ìª½ ì¡°ê° ìƒì„±
                         CreateVisualPiece(poly.gameObject, leftPoints, tex, texRect, spriteBounds, Vector2.left * 2f);
                         CreateVisualPiece(poly.gameObject, rightPoints, tex, texRect, spriteBounds, Vector2.right * 2f);
                         Destroy(poly.gameObject);
@@ -145,7 +162,7 @@ public class VisualScissor : MonoBehaviour
     }
 
 
-    // À§¿¡¼­ ÀÚ¸¥°Å »õ ¿ÀºêÁ§Æ®·Î »ı¼º 
+    // ìœ„ì—ì„œ ìë¥¸ê±° ìƒˆ ì˜¤ë¸Œì íŠ¸ë¡œ ìƒì„±
     void CreateVisualPiece(GameObject original, List<Vector2> points, Texture2D tex, Rect rect, Bounds bounds, Vector2 pushForce)
     {
         GameObject piece = new GameObject(original.name + "_Piece");

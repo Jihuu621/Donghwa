@@ -17,11 +17,32 @@ public class CheshireProjectile : MonoBehaviour, IDamageable
     private float _health = 1f;
     private bool _requestsCloneDebuff;
     private bool _hasHit;
+    private float _remainingLifetime;
+    private CheshireCatAI _poolOwner;
+    private SpriteRenderer _spriteRenderer;
+    private TrailRenderer _trail;
+    private ParticleSystem[] _particleSystems;
 
     private void Awake()
     {
         _rigidbody = GetComponent<Rigidbody2D>();
+        _spriteRenderer = GetComponent<SpriteRenderer>();
+        _trail = GetComponentInChildren<TrailRenderer>();
+        _particleSystems = GetComponentsInChildren<ParticleSystem>(true);
         SetParticlesToWorldSpace();
+    }
+
+    private void Update()
+    {
+        if (_remainingLifetime <= 0f) return;
+
+        _remainingLifetime -= Time.deltaTime;
+        if (_remainingLifetime <= 0f) Despawn();
+    }
+
+    public void SetPoolOwner(CheshireCatAI owner)
+    {
+        _poolOwner = owner;
     }
 
     public void Launch(Vector2 direction, float speed, float damage, GameObject source)
@@ -35,9 +56,10 @@ public class CheshireProjectile : MonoBehaviour, IDamageable
         _health = 1f;
         _requestsCloneDebuff = false;
         _hasHit = false;
+        _remainingLifetime = lifetime;
+        RestartVisuals();
         _rigidbody.linearVelocity = direction.normalized * speed;
         transform.up = direction;
-        Destroy(gameObject, lifetime);
     }
 
     public void LaunchHoming(
@@ -87,7 +109,7 @@ public class CheshireProjectile : MonoBehaviour, IDamageable
             {
                 _hasHit = true;
                 CloneDebuffRequested?.Invoke(root.gameObject, _source);
-                Destroy(gameObject);
+                Despawn();
                 return;
             }
 
@@ -96,15 +118,10 @@ public class CheshireProjectile : MonoBehaviour, IDamageable
 
             _hasHit = true;
             target.TakeDamage(_damage, _source);
-            Destroy(gameObject);
+            Despawn();
             return;
         }
 
-        //if (other.CompareTag("Ground") || other.gameObject.layer == LayerMask.NameToLayer("Ground"))
-        //{
-        //    _hasHit = true;
-        //    Destroy(gameObject);
-        //}
     }
 
     public void TakeDamage(float damage)
@@ -119,28 +136,55 @@ public class CheshireProjectile : MonoBehaviour, IDamageable
         if (_health > 0f) return;
 
         _hasHit = true;
-        Destroy(gameObject);
+        Despawn();
     }
 
     private void ApplyColor(Color color)
     {
-        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
-        if (spriteRenderer != null) spriteRenderer.color = color;
+        if (_spriteRenderer != null) _spriteRenderer.color = color;
 
-        TrailRenderer trail = GetComponentInChildren<TrailRenderer>();
-        if (trail == null) return;
-        trail.startColor = color;
-        trail.endColor = new Color(color.r, color.g, color.b, 0f);
+        if (_trail == null) return;
+        _trail.startColor = color;
+        _trail.endColor = new Color(color.r, color.g, color.b, 0f);
     }
 
     private void SetParticlesToWorldSpace()
     {
-        ParticleSystem[] particleSystems = GetComponentsInChildren<ParticleSystem>(true);
-        for (int i = 0; i < particleSystems.Length; i++)
+        for (int i = 0; i < _particleSystems.Length; i++)
         {
-            ParticleSystem.MainModule main = particleSystems[i].main;
+            ParticleSystem.MainModule main = _particleSystems[i].main;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
         }
+    }
+
+    private void RestartVisuals()
+    {
+        if (_trail != null) _trail.Clear();
+        for (int i = 0; i < _particleSystems.Length; i++)
+        {
+            _particleSystems[i].Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            _particleSystems[i].Play(true);
+        }
+    }
+
+    private void Despawn()
+    {
+        _remainingLifetime = 0f;
+        _homingTarget = null;
+        _rigidbody.linearVelocity = Vector2.zero;
+        if (_trail != null) _trail.Clear();
+        for (int i = 0; i < _particleSystems.Length; i++)
+        {
+            _particleSystems[i].Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        if (_poolOwner != null)
+        {
+            _poolOwner.ReleaseProjectile(this);
+            return;
+        }
+
+        Destroy(gameObject);
     }
 
     private void OnValidate()

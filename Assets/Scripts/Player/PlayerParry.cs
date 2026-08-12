@@ -52,6 +52,7 @@ public class PlayerParry : MonoBehaviour
     private GuardState _guardState = GuardState.Ready;
     private float _stateTimer;
     private float _stunTimer;
+    private Animator animator;
 
     // 기존 디버거와 체셔캣 연동에서 사용하는 공개 판정입니다.
     // 실패 선딜은 제거됐지만 기존 디버거 호환을 위해 false로 유지합니다.
@@ -61,6 +62,11 @@ public class PlayerParry : MonoBehaviour
     public bool IsStunned => _stunTimer > 0f;
     public bool IsReady => _guardState == GuardState.Ready && !IsStunned;
     public float CurrentGauge => currentGauge;
+
+    private void Awake()
+    {
+        animator = GetComponent<Animator>();
+    }
 
     private void Start()
     {
@@ -134,6 +140,22 @@ public class PlayerParry : MonoBehaviour
         {
             _guardState = GuardState.Ready;
         }
+
+        UpdateGuardAnimation();
+    }
+
+    private void UpdateGuardAnimation()
+    {
+        if (animator == null)
+        {
+            animator = GetComponent<Animator>();
+        }
+
+        if (animator != null)
+        {
+            bool isGuarding = _guardState == GuardState.PerfectGuard || _guardState == GuardState.Guard;
+            animator.SetBool("isGuarding", isGuarding);
+        }
     }
 
     public float OnHit(float damage)
@@ -205,6 +227,14 @@ public class PlayerParry : MonoBehaviour
         if (great != null) great.SetActive(false);
         if (good != null) good.SetActive(false);
         if (bad != null) bad.SetActive(false);
+    }
+
+    private void OnDisable()
+    {
+        if (animator != null)
+        {
+            animator.SetBool("isGuarding", false);
+        }
     }
 
     private void OnValidate()

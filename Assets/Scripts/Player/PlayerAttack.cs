@@ -250,7 +250,7 @@ public class PlayerAttack : MonoBehaviour
 
     private void Update()
     {
-        if (parry != null && parry.IsStunned)
+        if (parry != null && !parry.IsReady)
         {
             return;
         }

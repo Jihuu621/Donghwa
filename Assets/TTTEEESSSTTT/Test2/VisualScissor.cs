@@ -58,7 +58,7 @@ public class VisualScissor : MonoBehaviour
     void Update()
     {
         // 가위 모드
-        if (Input.GetKeyDown(KeyCode.Slash))
+        if (Input.GetKeyDown(KeyCode.R))
         {
             ToggleScissorMode();
         }

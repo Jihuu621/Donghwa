@@ -10,6 +10,7 @@ public sealed class OverheadDialogueSpeaker : MonoBehaviour
     [SerializeField] private bool hideWhenSpeakerIsDisabled = true;
 
     private OverheadSpeechBubble _bubble;
+    private float _bubbleScaleMultiplier = 1f;
 
     public bool IsSpeaking => _bubble != null && _bubble.IsVisible;
     public OverheadSpeechBubble CurrentBubble => _bubble;
@@ -41,6 +42,21 @@ public sealed class OverheadDialogueSpeaker : MonoBehaviour
         }
     }
 
+    public void SetBubblePrefab(OverheadSpeechBubble prefab)
+    {
+        if (_bubble != null || prefab == null) return;
+        bubblePrefab = prefab;
+    }
+
+    public void SetBubbleScaleMultiplier(float multiplier)
+    {
+        _bubbleScaleMultiplier = Mathf.Max(0.1f, multiplier);
+        if (_bubble != null)
+        {
+            _bubble.SetScaleMultiplier(_bubbleScaleMultiplier);
+        }
+    }
+
     private OverheadSpeechBubble GetOrCreateBubble()
     {
         if (_bubble != null)
@@ -59,6 +75,7 @@ public sealed class OverheadDialogueSpeaker : MonoBehaviour
         }
 
         _bubble.name = $"{name}_SpeechBubble";
+        _bubble.SetScaleMultiplier(_bubbleScaleMultiplier);
         ApplyTarget(_bubble);
         return _bubble;
     }

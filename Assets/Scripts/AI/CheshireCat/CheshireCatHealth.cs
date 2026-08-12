@@ -41,9 +41,30 @@ public class CheshireCatHealth : MonoBehaviour, IDamageable
         OnHealthChanged?.Invoke(CurrentHP, maxHP);
         if (CurrentHP > 0f) return;
 
+        TriggerDeath();
+    }
+
+    public void ForceKill()
+    {
+        if (_isDead) return;
+        CurrentHP = 0f;
+        OnHealthChanged?.Invoke(CurrentHP, maxHP);
+        TriggerDeath();
+    }
+
+    private void TriggerDeath()
+    {
+        if (_isDead) return;
         _isDead = true;
         OnDeath?.Invoke();
-        Destroy(gameObject);
+        if (_ai != null)
+        {
+            _ai.BeginDeathSequence();
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void OnValidate()

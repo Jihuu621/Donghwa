@@ -220,6 +220,19 @@ MonoBehaviour:
   recoveryDuration: 0.8
   teleportCountMin: 3
   teleportCountMax: 6
+  playIntroDialogue: 1
+  introBubblePrefab: {fileID: 813700000000000003, guid: d3c00bf51b9a478792a727d242df9da9, type: 3}
+  introDialogueLines:
+  - '[wave]드디어 왔네.[/wave]'
+  - '내 분신과 장난감을 구별할 수 있을까?'
+  - '[shake=2]<color=#FF4F91>그럼 시작해 볼까?</color>[/shake]'
+  introDialogueHoldDuration: 1.2
+  introDialogueBubbleScale: 1.5
+  deathDialogueLines:
+  - '너 생각보다 [wave]강하구나..?[/wave]'
+  - '곧 다시 만날 테니 기다려!'
+  deathDialogueHoldDuration: 1.25
+  deathFadeDuration: 1
   teleportAreaOffset: {x: 0, y: -1.82}
   teleportAreaSize: {x: 46.1, y: 14.9}
   minimumTeleportDistance: 3

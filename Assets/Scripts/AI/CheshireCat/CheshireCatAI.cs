@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -40,6 +41,27 @@ public class CheshireCatAI : EnemyAIBase
     [SerializeField, Min(0f)] private float recoveryDuration = 0.8f;
     [SerializeField, Min(1)] private int teleportCountMin = 3;
     [SerializeField, Min(1)] private int teleportCountMax = 6;
+
+    [Header("Intro Dialogue")]
+    [SerializeField] private bool playIntroDialogue = true;
+    [SerializeField] private OverheadSpeechBubble introBubblePrefab;
+    [SerializeField, TextArea(2, 4)] private string[] introDialogueLines =
+    {
+        "[wave]드디어 왔네.[/wave]",
+        "내 분신과 장난감을 구별할 수 있을까?",
+        "[shake=2]<color=#FF4F91>그럼 시작해 볼까?</color>[/shake]"
+    };
+    [SerializeField, Min(0f)] private float introDialogueHoldDuration = 1.2f;
+    [SerializeField, Min(0.1f)] private float introDialogueBubbleScale = 1.5f;
+
+    [Header("Death Sequence")]
+    [SerializeField, TextArea(2, 4)] private string[] deathDialogueLines =
+    {
+        "너 생각보다 [wave]강하구나..?[/wave]",
+        "곧 다시 만날 테니 기다려!"
+    };
+    [SerializeField, Min(0f)] private float deathDialogueHoldDuration = 1.25f;
+    [SerializeField, Min(0.1f)] private float deathFadeDuration = 1f;
 
     [Header("Teleport Area")]
     [FormerlySerializedAs("teleportAreaCenter")]
@@ -214,8 +236,10 @@ public class CheshireCatAI : EnemyAIBase
     private readonly List<CheshireFallingObject> _patternDObjectPool = new List<CheshireFallingObject>(32);
     private readonly List<CheshireFallingObject> _activePatternDObjects = new List<CheshireFallingObject>(32);
     private readonly RaycastHit2D[] _threadHitBuffer = new RaycastHit2D[PhysicsQueryBufferSize];
+    private readonly RaycastHit2D[] _patternCImpactHitBuffer = new RaycastHit2D[PhysicsQueryBufferSize];
     private readonly Collider2D[] _overlapBuffer = new Collider2D[PhysicsQueryBufferSize];
     private ContactFilter2D _unfilteredContactFilter;
+    private ContactFilter2D _patternCImpactContactFilter;
     private Vector2 _patternBMoveDirection;
     private Vector2 _patternBVelocitySmooth;
     private float _patternBDirectionTimer;
@@ -247,6 +271,7 @@ public class CheshireCatAI : EnemyAIBase
     private int _patternDTargetsSpawned;
     private int _patternDTargetCuts;
     private int _patternDFakeCuts;
+    private bool _isDying;
 
     private void OnEnable()
     {
@@ -266,6 +291,10 @@ public class CheshireCatAI : EnemyAIBase
         _bodyCollider = GetComponent<Collider2D>();
         _bodyParticleSystem = GetComponent<ParticleSystem>();
         _unfilteredContactFilter = ContactFilter2D.noFilter;
+        _patternCImpactContactFilter = new ContactFilter2D();
+        _patternCImpactContactFilter.SetLayerMask(patternCImpactMask);
+        _patternCImpactContactFilter.useTriggers = false;
+        IgnoreOneWayPlatformCollisions();
         if (Fsm.Player != null)
         {
             _playerStatusEffects = Fsm.Player.GetComponent<EffectManager>();
@@ -281,12 +310,57 @@ public class CheshireCatAI : EnemyAIBase
         PrewarmPatternDObjects();
         PrewarmProjectilePools();
         PlayIdleAnimation();
+        if (playIntroDialogue && HasIntroDialogue()) StartCoroutine(PlayIntroDialogueSequence());
+        else BeginCombat();
+    }
+
+    private bool HasIntroDialogue()
+    {
+        if (introDialogueLines == null) return false;
+        for (int i = 0; i < introDialogueLines.Length; i++)
+        {
+            if (!string.IsNullOrWhiteSpace(introDialogueLines[i])) return true;
+        }
+
+        return false;
+    }
+
+    private IEnumerator PlayIntroDialogueSequence()
+    {
+        Fsm.StopAllMovement();
+        OverheadDialogueSpeaker speaker = GetComponent<OverheadDialogueSpeaker>();
+        if (speaker == null) speaker = gameObject.AddComponent<OverheadDialogueSpeaker>();
+        speaker.SetBubblePrefab(introBubblePrefab);
+        speaker.SetBubbleScaleMultiplier(introDialogueBubbleScale);
+
+        for (int i = 0; i < introDialogueLines.Length; i++)
+        {
+            string line = introDialogueLines[i];
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            speaker.Say(line, introDialogueHoldDuration);
+            yield return null;
+            while (speaker.IsSpeaking) yield return null;
+        }
+
+        BeginCombat();
+    }
+
+    private void BeginCombat()
+    {
         if (debugStartWithPatternD) BeginPatternD();
         else ChangeState(State.Idle);
     }
 
     private void Update()
     {
+        if (!_isDying && Input.GetKeyDown(KeyCode.F11))
+        {
+            CheshireCatHealth health = GetComponent<CheshireCatHealth>();
+            if (health != null) health.ForceKill();
+            return;
+        }
+
         switch (CurrentState)
         {
             case State.Idle: UpdateIdle(); break;
@@ -320,6 +394,7 @@ public class CheshireCatAI : EnemyAIBase
 
     public override bool TryStun(float duration)
     {
+        if (_isDying) return false;
         if (IsSmokeForm || IsGroggy) return false;
         if (CurrentState == State.PatternBActive) DestroyClonesImmediately();
         if (CurrentState == State.PatternCCharge)
@@ -712,13 +787,14 @@ public class CheshireCatAI : EnemyAIBase
         if (CurrentState != State.PatternCCharge) return;
 
         float castDistance = patternCChargeSpeed * Mathf.Max(Time.deltaTime, Time.fixedDeltaTime) + 0.1f;
-        RaycastHit2D impact = Physics2D.CircleCast(
+        int impactCount = Physics2D.CircleCast(
             currentPosition,
             patternCImpactCastRadius,
             _patternCChargeDirection,
-            castDistance,
-            patternCImpactMask);
-        if (impact.collider != null)
+            _patternCImpactContactFilter,
+            _patternCImpactHitBuffer,
+            castDistance);
+        if (TryGetClosestPatternCImpact(impactCount, out RaycastHit2D impact))
         {
             Vector2 impactPosition = impact.point - _patternCChargeDirection * patternCImpactCastRadius;
             SetPosition(impactPosition);
@@ -730,6 +806,45 @@ public class CheshireCatAI : EnemyAIBase
         if (_stateTimer >= patternCChargeMaxDuration)
         {
             TriggerPatternCImpact(Fsm.Rb.position, false);
+        }
+    }
+
+    private bool TryGetClosestPatternCImpact(int hitCount, out RaycastHit2D closestImpact)
+    {
+        closestImpact = default;
+        float closestDistance = float.PositiveInfinity;
+        bool found = false;
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit2D candidate = _patternCImpactHitBuffer[i];
+            if (candidate.collider == null || IsOneWayPlatform(candidate.collider)) continue;
+            if (candidate.distance >= closestDistance) continue;
+
+            closestDistance = candidate.distance;
+            closestImpact = candidate;
+            found = true;
+        }
+
+        return found;
+    }
+
+    private void IgnoreOneWayPlatformCollisions()
+    {
+        if (_bodyCollider == null) return;
+
+        PlatformEffector2D[] effectors = FindObjectsByType<PlatformEffector2D>();
+        for (int i = 0; i < effectors.Length; i++)
+        {
+            if (effectors[i] == null || !effectors[i].useOneWay) continue;
+            Collider2D[] platformColliders = effectors[i].GetComponents<Collider2D>();
+            for (int j = 0; j < platformColliders.Length; j++)
+            {
+                if (platformColliders[j] != null)
+                {
+                    Physics2D.IgnoreCollision(_bodyCollider, platformColliders[j], true);
+                }
+            }
         }
     }
 
@@ -1085,6 +1200,87 @@ public class CheshireCatAI : EnemyAIBase
         }
 
         return true;
+    }
+
+    public void BeginDeathSequence()
+    {
+        if (_isDying) return;
+        _isDying = true;
+
+        StopAllCoroutines();
+        CurrentState = State.None;
+        Fsm.StopAllMovement();
+        DestroyClonesImmediately();
+        ReleaseAllPatternDObjects();
+        ReleaseAttachedNeedles();
+        DeactivateProjectilePool(_projectilePool);
+        DeactivateProjectilePool(_patternBProjectilePool);
+
+        SetPatternDBodyHidden(false);
+        SetSmokeForm(false);
+        if (_bodyCollider != null) _bodyCollider.enabled = false;
+        if (_afterimageTrail != null) _afterimageTrail.SetEmitting(false);
+        if (Fsm.Sr != null) Fsm.Sr.color = _normalColor;
+        PlayIdleAnimation();
+
+        OverheadDialogueSpeaker speaker = GetComponent<OverheadDialogueSpeaker>();
+        if (speaker != null) speaker.StopSpeaking(true);
+        StartCoroutine(PlayDeathSequence());
+    }
+
+    private IEnumerator PlayDeathSequence()
+    {
+        OverheadDialogueSpeaker speaker = GetComponent<OverheadDialogueSpeaker>();
+        if (speaker == null) speaker = gameObject.AddComponent<OverheadDialogueSpeaker>();
+        speaker.SetBubblePrefab(introBubblePrefab);
+        speaker.SetBubbleScaleMultiplier(introDialogueBubbleScale);
+
+        if (deathDialogueLines != null)
+        {
+            for (int i = 0; i < deathDialogueLines.Length; i++)
+            {
+                string line = deathDialogueLines[i];
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                speaker.Say(line, deathDialogueHoldDuration);
+                yield return null;
+                while (speaker.IsSpeaking) yield return null;
+            }
+        }
+
+        PlaySmokeAnimation(TeleportAnimationState);
+        if (_bodyParticleSystem != null)
+        {
+            _bodyParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
+
+        Color startColor = Fsm.Sr != null ? Fsm.Sr.color : _normalColor;
+        float startMusicVolume = _musicAudioSource != null ? _musicAudioSource.volume : 0f;
+        float elapsed = 0f;
+        while (elapsed < deathFadeDuration)
+        {
+            elapsed += Time.deltaTime;
+            float normalized = Mathf.Clamp01(elapsed / deathFadeDuration);
+            if (Fsm.Sr != null)
+            {
+                Fsm.Sr.color = new Color(startColor.r, startColor.g, startColor.b, 1f - normalized);
+            }
+            if (_musicAudioSource != null)
+            {
+                _musicAudioSource.volume = Mathf.Lerp(startMusicVolume, 0f, normalized);
+            }
+            yield return null;
+        }
+
+        Destroy(gameObject);
+    }
+
+    private static void DeactivateProjectilePool(List<CheshireProjectile> pool)
+    {
+        for (int i = 0; i < pool.Count; i++)
+        {
+            if (pool[i] != null) pool[i].gameObject.SetActive(false);
+        }
     }
 
     public void HandlePatternDPlayerHit(CheshireFallingObject fallingObject, Collider2D playerCollider)
@@ -1909,10 +2105,18 @@ public class CheshireCatAI : EnemyAIBase
 
     private bool IsPatternCImpactSurface(Collider2D other)
     {
+        if (IsOneWayPlatform(other)) return false;
         int layerBit = 1 << other.gameObject.layer;
         return (patternCImpactMask.value & layerBit) != 0 ||
-               other.CompareTag("Ground") ||
-               other.GetComponentInParent<PlatformEffector2D>() != null;
+               other.CompareTag("Ground");
+    }
+
+    private static bool IsOneWayPlatform(Collider2D other)
+    {
+        PlatformEffector2D effector = other != null
+            ? other.GetComponentInParent<PlatformEffector2D>()
+            : null;
+        return effector != null && effector.useOneWay;
     }
 
     private static bool IsPatternCCounterThread(Collider2D other)
@@ -2051,6 +2255,10 @@ public class CheshireCatAI : EnemyAIBase
         idleDuration = Mathf.Max(0f, idleDuration);
         smokeDuration = Mathf.Max(0f, smokeDuration);
         recoveryDuration = Mathf.Max(0f, recoveryDuration);
+        introDialogueHoldDuration = Mathf.Max(0f, introDialogueHoldDuration);
+        introDialogueBubbleScale = Mathf.Max(0.1f, introDialogueBubbleScale);
+        deathDialogueHoldDuration = Mathf.Max(0f, deathDialogueHoldDuration);
+        deathFadeDuration = Mathf.Max(0.1f, deathFadeDuration);
         teleportCountMin = Mathf.Clamp(teleportCountMin, 1, MaxPatternATeleports);
         teleportCountMax = Mathf.Clamp(teleportCountMax, teleportCountMin, MaxPatternATeleports);
         teleportAreaSize.x = Mathf.Max(1f, teleportAreaSize.x);

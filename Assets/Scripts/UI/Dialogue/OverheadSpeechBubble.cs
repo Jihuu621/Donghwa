@@ -27,6 +27,7 @@ public sealed class OverheadSpeechBubble : MonoBehaviour
     [SerializeField] private Color backgroundColor = new Color(0.075f, 0.075f, 0.09f, 0.96f);
     [SerializeField] private Color outlineColor = new Color(0.95f, 0.56f, 0.68f, 0.95f);
     [SerializeField, Min(0.001f)] private float canvasScale = 0.015f;
+    private float _scaleMultiplier = 1f;
     [SerializeField] private int sortingOrder = 120;
 
     [Header("Layout")]
@@ -68,6 +69,13 @@ public sealed class OverheadSpeechBubble : MonoBehaviour
     public bool IsVisible => _canvasRect != null && _canvasRect.gameObject.activeSelf;
     public TMP_Text TextComponent => _text;
 
+    public void SetScaleMultiplier(float multiplier)
+    {
+        _scaleMultiplier = Mathf.Max(0.1f, multiplier);
+    }
+
+    private float EffectiveCanvasScale => canvasScale * _scaleMultiplier;
+
     private float DeltaTime => useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
     private float CurrentTime => useUnscaledTime ? Time.unscaledTime : Time.time;
 
@@ -99,16 +107,16 @@ public sealed class OverheadSpeechBubble : MonoBehaviour
             _playRoutine = null;
         }
 
+        _canvasGroup.alpha = 0f;
+        ClearRenderedText();
         _dialogue = Parse(rawDialogue ?? string.Empty);
-        _canvasRect.gameObject.SetActive(true);
-        _text.text = string.Empty;
-        _text.maxVisibleCharacters = int.MaxValue;
         _visibleCharacters = 0;
         _cueIndex = 0;
         UpdateLayout();
 
-        _canvasGroup.alpha = 0f;
-        _canvasRect.localScale = Vector3.one * (canvasScale * 0.82f);
+        _canvasRect.localScale = Vector3.one * (EffectiveCanvasScale * 0.82f);
+        _canvasRect.gameObject.SetActive(true);
+        _text.maxVisibleCharacters = int.MaxValue;
         _geometryDirty = true;
         UpdateFollowPosition();
         _playRoutine = StartCoroutine(PlayRoutine(Mathf.Max(0f, holdDuration)));
@@ -195,7 +203,7 @@ public sealed class OverheadSpeechBubble : MonoBehaviour
     private IEnumerator HideRoutine()
     {
         yield return AnimateVisibility(_canvasGroup.alpha, 0f,
-            _canvasRect.localScale.x / canvasScale, 0.88f, disappearDuration);
+            _canvasRect.localScale.x / EffectiveCanvasScale, 0.88f, disappearDuration);
         SetHiddenVisual();
     }
 
@@ -205,7 +213,7 @@ public sealed class OverheadSpeechBubble : MonoBehaviour
         if (duration <= 0f)
         {
             _canvasGroup.alpha = toAlpha;
-            _canvasRect.localScale = Vector3.one * (canvasScale * toScale);
+            _canvasRect.localScale = Vector3.one * (EffectiveCanvasScale * toScale);
             yield break;
         }
 
@@ -217,12 +225,12 @@ public sealed class OverheadSpeechBubble : MonoBehaviour
             float eased = 1f - Mathf.Pow(1f - normalized, 3f);
             _canvasGroup.alpha = Mathf.LerpUnclamped(fromAlpha, toAlpha, eased);
             float scale = Mathf.LerpUnclamped(fromScale, toScale, eased);
-            _canvasRect.localScale = Vector3.one * (canvasScale * scale);
+            _canvasRect.localScale = Vector3.one * (EffectiveCanvasScale * scale);
             yield return null;
         }
 
         _canvasGroup.alpha = toAlpha;
-        _canvasRect.localScale = Vector3.one * (canvasScale * toScale);
+        _canvasRect.localScale = Vector3.one * (EffectiveCanvasScale * toScale);
     }
 
     private IEnumerator WaitForDuration(float duration)
@@ -351,7 +359,7 @@ public sealed class OverheadSpeechBubble : MonoBehaviour
         canvasObject.transform.SetParent(transform, false);
         _canvasRect = canvasObject.GetComponent<RectTransform>();
         _canvasRect.pivot = new Vector2(0.5f, 0f);
-        _canvasRect.localScale = Vector3.one * canvasScale;
+        _canvasRect.localScale = Vector3.one * EffectiveCanvasScale;
 
         Canvas canvas = canvasObject.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.WorldSpace;
@@ -406,7 +414,7 @@ public sealed class OverheadSpeechBubble : MonoBehaviour
 
     private void ApplyVisualSettings()
     {
-        _canvasRect.localScale = Vector3.one * canvasScale;
+        _canvasRect.localScale = Vector3.one * EffectiveCanvasScale;
 
         Canvas canvas = _canvasRect.GetComponent<Canvas>();
         if (canvas != null)
@@ -632,9 +640,25 @@ public sealed class OverheadSpeechBubble : MonoBehaviour
         if (_canvasRect != null)
         {
             _canvasGroup.alpha = 0f;
-            _canvasRect.localScale = Vector3.one * canvasScale;
+            ClearRenderedText();
+            _dialogue = null;
+            _visibleCharacters = 0;
+            _cueIndex = 0;
+            _baseMeshInfo = null;
+            _geometryDirty = false;
+            _canvasRect.localScale = Vector3.one * EffectiveCanvasScale;
             _canvasRect.gameObject.SetActive(false);
         }
+    }
+
+    private void ClearRenderedText()
+    {
+        if (_text == null) return;
+
+        _text.text = string.Empty;
+        _text.maxVisibleCharacters = 0;
+        _text.ForceMeshUpdate(true, true);
+        _text.canvasRenderer.Clear();
     }
 
     private ParsedDialogue Parse(string rawDialogue)

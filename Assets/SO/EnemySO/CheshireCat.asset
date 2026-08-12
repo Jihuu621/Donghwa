@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   EnemyName: CheshireCat
   EnemyDescription: Teleporting smoke-form boss.
-  MaxHP: 400
+  MaxHP: 50
   Damage: 20
   MoveSpeed: 0
   PatrolSpeed: 0

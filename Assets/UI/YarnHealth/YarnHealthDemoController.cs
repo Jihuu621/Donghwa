@@ -95,6 +95,6 @@ public sealed class YarnHealthDemoController : MonoBehaviour
             return;
         }
 
-        hintText.text = $"UI TEST  /  1 HIT = 1/2 YARN  /  BOSS = {bossDamageInHalfUnits} HALF-STEPS";
+        hintText.text = $"UI TEST  /  HIT: FULL > DAMAGED > EMPTY  /  BOSS = {bossDamageInHalfUnits} STATES";
     }
 }

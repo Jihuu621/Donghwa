@@ -22,9 +22,14 @@ public sealed class YarnHealthSlotView : MonoBehaviour
 
     public void SetState(int state, Sprite fullSprite, Sprite halfSprite)
     {
+        SetState(state, fullSprite, halfSprite, null);
+    }
+
+    public void SetState(int state, Sprite fullSprite, Sprite damagedSprite, Sprite emptySprite)
+    {
         ResetPose();
 
-        Sprite sprite = state >= 2 ? fullSprite : state == 1 ? halfSprite : null;
+        Sprite sprite = state >= 2 ? fullSprite : state == 1 ? damagedSprite : emptySprite;
         mainImage.sprite = sprite;
         mainImage.enabled = sprite != null;
         mainImage.color = sprite != null ? Color.white : Color.clear;

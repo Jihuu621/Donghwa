@@ -7,7 +7,7 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class YarnHealthDisplay : MonoBehaviour
 {
-    public const int CurrentViewVersion = 8;
+    public const int CurrentViewVersion = 10;
 
     [Header("Health Source")]
     [SerializeField] private Health targetHealth;
@@ -20,6 +20,7 @@ public sealed class YarnHealthDisplay : MonoBehaviour
     [SerializeField] private RectTransform slotContainer;
     [SerializeField] private Sprite fullYarnSprite;
     [SerializeField] private Sprite halfYarnSprite;
+    [SerializeField] private Sprite emptyYarnSprite;
     [SerializeField] private TMP_Text healthText;
     [SerializeField] private Image damageFlash;
     [SerializeField] private Vector2 slotSize = new Vector2(112f, 112f);
@@ -122,9 +123,31 @@ public sealed class YarnHealthDisplay : MonoBehaviour
         Image flashImage,
         int numberOfYarns)
     {
+        Configure(
+            health,
+            container,
+            fullSprite,
+            halfSprite,
+            null,
+            statusLabel,
+            flashImage,
+            numberOfYarns);
+    }
+
+    public void Configure(
+        Health health,
+        RectTransform container,
+        Sprite fullSprite,
+        Sprite damagedSprite,
+        Sprite emptySprite,
+        TMP_Text statusLabel,
+        Image flashImage,
+        int numberOfYarns)
+    {
         slotContainer = container;
         fullYarnSprite = fullSprite;
-        halfYarnSprite = halfSprite;
+        halfYarnSprite = damagedSprite;
+        emptyYarnSprite = emptySprite;
         healthText = statusLabel;
         damageFlash = flashImage;
         yarnCount = Mathf.Max(1, numberOfYarns);
@@ -405,7 +428,7 @@ public sealed class YarnHealthDisplay : MonoBehaviour
         Sprite fromSprite = GetStateSprite(fromState);
         Sprite toSprite = GetStateSprite(toState);
 
-        slot.PrepareTransition(fromSprite, toSprite != null ? toSprite : fromSprite);
+        slot.PrepareTransition(fromSprite, toSprite);
 
         float elapsed = 0f;
         while (elapsed < duration)
@@ -423,12 +446,12 @@ public sealed class YarnHealthDisplay : MonoBehaviour
             slot.SetGhostAlpha(1f - eased);
 
             slot.MainRect.localScale = Vector3.one * Mathf.Lerp(0.76f, 1f, EaseOutBack(t));
-            slot.SetMainAlpha(toState == 0 ? 0f : Mathf.Lerp(0.25f, 1f, eased));
+            slot.SetMainAlpha(Mathf.Lerp(0.25f, 1f, eased));
 
             yield return null;
         }
 
-        slot.SetState(toState, fullYarnSprite, halfYarnSprite);
+        slot.SetState(toState, fullYarnSprite, halfYarnSprite, emptyYarnSprite);
     }
 
     private IEnumerator AnimateHealStep(int fromUnits, int toUnits, float duration)
@@ -460,7 +483,7 @@ public sealed class YarnHealthDisplay : MonoBehaviour
             yield return null;
         }
 
-        slot.SetState(toState, fullYarnSprite, halfYarnSprite);
+        slot.SetState(toState, fullYarnSprite, halfYarnSprite, emptyYarnSprite);
     }
 
     private void StartDamageFeedback(float damageFraction)
@@ -518,7 +541,11 @@ public sealed class YarnHealthDisplay : MonoBehaviour
     {
         for (int i = 0; i < slots.Count; i++)
         {
-            slots[i].SetState(GetSlotState(halfUnits, i), fullYarnSprite, halfYarnSprite);
+            slots[i].SetState(
+                GetSlotState(halfUnits, i),
+                fullYarnSprite,
+                halfYarnSprite,
+                emptyYarnSprite);
         }
     }
 
@@ -534,7 +561,7 @@ public sealed class YarnHealthDisplay : MonoBehaviour
             return fullYarnSprite;
         }
 
-        return state == 1 ? halfYarnSprite : null;
+        return state == 1 ? halfYarnSprite : emptyYarnSprite;
     }
 
     private void UpdateHealthText(float currentHealth, float maximumHealth)

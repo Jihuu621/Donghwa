@@ -12,32 +12,36 @@ public sealed class ParryNeedleGaugeDisplay : MonoBehaviour
     [SerializeField] private bool findPlayerAutomatically = true;
 
     [Header("View")]
-    [SerializeField] private List<Image> halfUnitFills = new List<Image>();
+    [SerializeField] private Image mainImage;
+    [SerializeField] private Image ghostImage;
+    [SerializeField] private List<Sprite> chargeSprites = new List<Sprite>();
     [SerializeField] private TMP_Text chargeText;
     [SerializeField] private RectTransform feedbackRoot;
-    [SerializeField] private Color filledColor = new Color(0.96f, 0.08f, 0.18f, 1f);
-    [SerializeField] private Color emptyColor = new Color(0.12f, 0.035f, 0.055f, 0.9f);
 
     [Header("Animation")]
-    [SerializeField, Min(0f)] private float halfStepDuration = 0.13f;
+    [SerializeField, Min(0f)] private float chargeStepDuration = 0.2f;
     [SerializeField] private bool useUnscaledTime = true;
 
     private NeedleSkillManager subscribedSkill;
     private Coroutine transitionRoutine;
     private Coroutine feedbackRoutine;
-    private int displayedHalfUnits;
-    private int targetHalfUnits;
+    private int displayedCharges;
+    private int targetCharges;
     private Vector2 restingPosition;
     private Vector3 restingScale = Vector3.one;
     private bool initialized;
 
-    public int DisplayedHalfUnits => displayedHalfUnits;
-    public int TotalHalfUnits => halfUnitFills.Count;
+    public int DisplayedCharges => displayedCharges;
+    public int DisplayedHalfUnits => displayedCharges * 2;
+    public int TotalHalfUnits => MaximumVisibleCharges * 2;
     public NeedleSkillManager TargetSkill => targetSkill;
+
+    private int MaximumVisibleCharges => Mathf.Max(0, chargeSprites.Count - 1);
 
     private void Awake()
     {
         CacheRestingPose();
+        ApplyVisualState(displayedCharges);
     }
 
     private void OnEnable()
@@ -58,38 +62,41 @@ public sealed class ParryNeedleGaugeDisplay : MonoBehaviour
     {
         Unsubscribe();
         StopAnimations();
-        ApplyAllStates(displayedHalfUnits);
+        ApplyVisualState(displayedCharges);
     }
 
     private void OnValidate()
     {
-        halfStepDuration = Mathf.Max(0f, halfStepDuration);
+        chargeStepDuration = Mathf.Max(0f, chargeStepDuration);
     }
 
     public void Configure(
         NeedleSkillManager skill,
-        IList<Image> fills,
+        Image primaryImage,
+        Image transitionImage,
+        IReadOnlyList<Sprite> sprites,
         TMP_Text statusText,
         RectTransform animatedRoot)
     {
+        Unsubscribe();
         targetSkill = skill;
+        mainImage = primaryImage;
+        ghostImage = transitionImage;
         chargeText = statusText;
         feedbackRoot = animatedRoot != null ? animatedRoot : transform as RectTransform;
-        halfUnitFills.Clear();
 
-        if (fills != null)
+        chargeSprites.Clear();
+        if (sprites != null)
         {
-            for (int i = 0; i < fills.Count; i++)
+            for (int i = 0; i < sprites.Count; i++)
             {
-                if (fills[i] != null)
-                {
-                    halfUnitFills.Add(fills[i]);
-                }
+                if (sprites[i] != null) chargeSprites.Add(sprites[i]);
             }
         }
 
         CacheRestingPose();
         ApplyImmediate(skill != null ? skill.ParryHalfUnits : 0);
+        Subscribe();
     }
 
     public void Bind(NeedleSkillManager skill)
@@ -102,28 +109,21 @@ public sealed class ParryNeedleGaugeDisplay : MonoBehaviour
 
     private void ResolveTarget()
     {
-        if (targetSkill != null || !findPlayerAutomatically)
-        {
-            return;
-        }
+        if (targetSkill != null || !findPlayerAutomatically) return;
 
         GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
+        if (player == null) return;
+
+        targetSkill = player.GetComponent<NeedleSkillManager>();
+        if (targetSkill == null)
         {
-            targetSkill = player.GetComponent<NeedleSkillManager>();
-            if (targetSkill == null)
-            {
-                targetSkill = player.GetComponentInChildren<NeedleSkillManager>(true);
-            }
+            targetSkill = player.GetComponentInChildren<NeedleSkillManager>(true);
         }
     }
 
     private void Subscribe()
     {
-        if (!Application.isPlaying || targetSkill == null || subscribedSkill == targetSkill)
-        {
-            return;
-        }
+        if (!Application.isPlaying || targetSkill == null || subscribedSkill == targetSkill) return;
 
         Unsubscribe();
         subscribedSkill = targetSkill;
@@ -133,10 +133,7 @@ public sealed class ParryNeedleGaugeDisplay : MonoBehaviour
 
     private void Unsubscribe()
     {
-        if (subscribedSkill == null)
-        {
-            return;
-        }
+        if (subscribedSkill == null) return;
 
         subscribedSkill.OnParryChargeChanged -= HandleChargeChanged;
         subscribedSkill.OnNeedleThrowDenied -= HandleThrowDenied;
@@ -151,25 +148,29 @@ public sealed class ParryNeedleGaugeDisplay : MonoBehaviour
     private void ApplyImmediate(int halfUnits)
     {
         StopTransition();
-        displayedHalfUnits = Mathf.Clamp(halfUnits, 0, TotalHalfUnits);
-        targetHalfUnits = displayedHalfUnits;
+        displayedCharges = CalculateVisibleCharges(halfUnits);
+        targetCharges = displayedCharges;
         initialized = true;
-        ApplyAllStates(displayedHalfUnits);
+        ApplyVisualState(displayedCharges);
         UpdateChargeText();
     }
 
     private void HandleChargeChanged(int currentHalfUnits, int maximumHalfUnits)
     {
-        targetHalfUnits = Mathf.Clamp(currentHalfUnits, 0, TotalHalfUnits);
+        targetCharges = CalculateVisibleCharges(currentHalfUnits);
         UpdateChargeText();
 
-        if (!initialized || !Application.isPlaying || halfStepDuration <= 0f)
+        // One perfect guard is intentionally retained as a hidden half-charge.
+        // The visual only changes after every second successful perfect guard.
+        if (targetCharges == displayedCharges) return;
+
+        if (!initialized || !Application.isPlaying || chargeStepDuration <= 0f)
         {
-            ApplyImmediate(targetHalfUnits);
+            ApplyImmediate(currentHalfUnits);
             return;
         }
 
-        if (transitionRoutine == null && displayedHalfUnits != targetHalfUnits)
+        if (transitionRoutine == null)
         {
             transitionRoutine = StartCoroutine(AnimateTowardTarget());
         }
@@ -177,85 +178,100 @@ public sealed class ParryNeedleGaugeDisplay : MonoBehaviour
 
     private IEnumerator AnimateTowardTarget()
     {
-        while (displayedHalfUnits != targetHalfUnits)
+        while (displayedCharges != targetCharges)
         {
-            int direction = targetHalfUnits > displayedHalfUnits ? 1 : -1;
-            int imageIndex = direction > 0 ? displayedHalfUnits : displayedHalfUnits - 1;
-
-            if (imageIndex < 0 || imageIndex >= halfUnitFills.Count)
-            {
-                displayedHalfUnits = targetHalfUnits;
-                break;
-            }
-
-            Image fill = halfUnitFills[imageIndex];
-            yield return AnimateHalf(fill, direction > 0);
-
-            displayedHalfUnits += direction;
-            ApplyAllStates(displayedHalfUnits);
+            int direction = targetCharges > displayedCharges ? 1 : -1;
+            int nextCharges = displayedCharges + direction;
+            yield return AnimateChargeStep(displayedCharges, nextCharges, direction > 0);
+            displayedCharges = nextCharges;
+            ApplyVisualState(displayedCharges);
         }
 
         transitionRoutine = null;
     }
 
-    private IEnumerator AnimateHalf(Image fill, bool filling)
+    private IEnumerator AnimateChargeStep(int fromCharges, int toCharges, bool gaining)
     {
-        if (fill == null)
+        if (mainImage == null || ghostImage == null)
         {
             yield break;
         }
 
-        RectTransform rect = fill.rectTransform;
+        Sprite fromSprite = GetChargeSprite(fromCharges);
+        Sprite toSprite = GetChargeSprite(toCharges);
+        mainImage.sprite = toSprite;
+        mainImage.enabled = toSprite != null;
+        mainImage.color = toSprite != null ? Color.white : Color.clear;
+        ghostImage.sprite = fromSprite;
+        ghostImage.enabled = fromSprite != null;
+        ghostImage.color = fromSprite != null ? Color.white : Color.clear;
+
+        RectTransform mainRect = mainImage.rectTransform;
+        RectTransform ghostRect = ghostImage.rectTransform;
         float elapsed = 0f;
 
-        while (elapsed < halfStepDuration)
+        while (elapsed < chargeStepDuration)
         {
             elapsed += GetDeltaTime();
-            float t = Mathf.Clamp01(elapsed / halfStepDuration);
+            float t = Mathf.Clamp01(elapsed / chargeStepDuration);
             float eased = 1f - Mathf.Pow(1f - t, 3f);
-            float amount = filling ? eased : 1f - eased;
+            float pop = 1f + Mathf.Sin(t * Mathf.PI) * (gaining ? 0.12f : 0.05f);
 
-            fill.color = Color.Lerp(emptyColor, filledColor, amount);
-            rect.localScale = new Vector3(Mathf.Lerp(0.2f, 1f, amount), Mathf.Lerp(0.78f, 1f, amount), 1f);
+            SetImageAlpha(mainImage, eased);
+            SetImageAlpha(ghostImage, 1f - eased);
+            mainRect.localScale = Vector3.one * Mathf.Lerp(0.78f, pop, eased);
+            mainRect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(gaining ? -8f : 8f, 0f, eased));
+            ghostRect.localScale = Vector3.one * Mathf.Lerp(1f, gaining ? 1.08f : 0.84f, eased);
             yield return null;
         }
+    }
 
-        fill.color = filling ? filledColor : emptyColor;
-        rect.localScale = Vector3.one;
+    private int CalculateVisibleCharges(int halfUnits)
+    {
+        return Mathf.Clamp(Mathf.Max(0, halfUnits) / 2, 0, MaximumVisibleCharges);
+    }
 
-        if (filling && feedbackRoot != null)
+    private void ApplyVisualState(int charges)
+    {
+        if (mainImage != null)
         {
-            feedbackRoot.localScale = restingScale * 1.025f;
-            yield return null;
-            feedbackRoot.localScale = restingScale;
+            mainImage.sprite = GetChargeSprite(charges);
+            mainImage.enabled = mainImage.sprite != null;
+            mainImage.color = mainImage.sprite != null ? Color.white : Color.clear;
+            mainImage.rectTransform.localScale = Vector3.one;
+            mainImage.rectTransform.localRotation = Quaternion.identity;
         }
+
+        if (ghostImage != null)
+        {
+            ghostImage.enabled = false;
+            ghostImage.sprite = null;
+            ghostImage.color = Color.clear;
+            ghostImage.rectTransform.localScale = Vector3.one;
+            ghostImage.rectTransform.localRotation = Quaternion.identity;
+        }
+    }
+
+    private Sprite GetChargeSprite(int charges)
+    {
+        if (chargeSprites.Count == 0) return null;
+        return chargeSprites[Mathf.Clamp(charges, 0, chargeSprites.Count - 1)];
     }
 
     private void HandleThrowDenied()
     {
-        if (!isActiveAndEnabled)
-        {
-            return;
-        }
+        if (!isActiveAndEnabled) return;
 
-        if (feedbackRoutine != null)
-        {
-            StopCoroutine(feedbackRoutine);
-        }
-
+        if (feedbackRoutine != null) StopCoroutine(feedbackRoutine);
         feedbackRoutine = StartCoroutine(PlayDeniedFeedback());
     }
 
     private IEnumerator PlayDeniedFeedback()
     {
-        if (feedbackRoot == null)
-        {
-            yield break;
-        }
+        if (feedbackRoot == null) yield break;
 
         const float duration = 0.22f;
         float elapsed = 0f;
-
         while (elapsed < duration)
         {
             elapsed += GetDeltaTime();
@@ -269,51 +285,28 @@ public sealed class ParryNeedleGaugeDisplay : MonoBehaviour
         feedbackRoutine = null;
     }
 
-    private void ApplyAllStates(int halfUnits)
-    {
-        for (int i = 0; i < halfUnitFills.Count; i++)
-        {
-            Image fill = halfUnitFills[i];
-            if (fill == null)
-            {
-                continue;
-            }
-
-            fill.color = i < halfUnits ? filledColor : emptyColor;
-            fill.rectTransform.localScale = Vector3.one;
-        }
-    }
-
     private void UpdateChargeText()
     {
-        if (chargeText == null)
-        {
-            return;
-        }
+        if (chargeText == null) return;
 
-        int charges = targetHalfUnits / 2;
-        int maximumCharges = targetSkill != null ? targetSkill.MaximumNeedleCharges : Mathf.Max(1, TotalHalfUnits / 2);
-        chargeText.text = $"NEEDLE  {charges} / {maximumCharges}";
+        int maximumCharges = targetSkill != null
+            ? targetSkill.MaximumNeedleCharges
+            : MaximumVisibleCharges;
+        chargeText.text = $"NEEDLE  {targetCharges} / {maximumCharges}";
     }
 
     private void CacheRestingPose()
     {
-        if (feedbackRoot == null)
-        {
-            feedbackRoot = transform as RectTransform;
-        }
+        if (feedbackRoot == null) feedbackRoot = transform as RectTransform;
+        if (feedbackRoot == null) return;
 
-        if (feedbackRoot != null)
-        {
-            restingPosition = feedbackRoot.anchoredPosition;
-            restingScale = feedbackRoot.localScale;
-        }
+        restingPosition = feedbackRoot.anchoredPosition;
+        restingScale = feedbackRoot.localScale;
     }
 
     private void StopAnimations()
     {
         StopTransition();
-
         if (feedbackRoutine != null)
         {
             StopCoroutine(feedbackRoutine);
@@ -329,11 +322,16 @@ public sealed class ParryNeedleGaugeDisplay : MonoBehaviour
 
     private void StopTransition()
     {
-        if (transitionRoutine != null)
-        {
-            StopCoroutine(transitionRoutine);
-            transitionRoutine = null;
-        }
+        if (transitionRoutine == null) return;
+        StopCoroutine(transitionRoutine);
+        transitionRoutine = null;
+    }
+
+    private static void SetImageAlpha(Graphic graphic, float alpha)
+    {
+        Color color = graphic.color;
+        color.a = Mathf.Clamp01(alpha);
+        graphic.color = color;
     }
 
     private float GetDeltaTime()

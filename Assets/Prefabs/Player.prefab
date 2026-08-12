@@ -431,14 +431,11 @@ MonoBehaviour:
   hitbox: {fileID: 5334133533804395451}
   hitboxRenderer: {fileID: 6230326503581805872}
   showHitboxDebug: 1
-  logComboDebug: 1
-  damageA: 10
-  damageB: 10
-  damageC: 15
-  attack1StateName: Attack1
-  attack2StateName: Attack2
-  attack3StateName: Attack3
-  attackSafetyTimeout: 1.2
+  temporaryDamage: 10
+  hitboxStartDelay: 0.16
+  hitboxActiveDuration: 0.1
+  attackDuration: 0.42
+  attackTriggerName: AttackTrigger
 --- !u!114 &1405898839669298776
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -512,7 +509,7 @@ Animator:
   m_GameObject: {fileID: 5329500642152477051}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 740ab93705750ce40b0bb7c1c367a174, type: 2}
+  m_Controller: {fileID: 9100000, guid: 13132a94ee7a6264baa39455b1908e05, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0

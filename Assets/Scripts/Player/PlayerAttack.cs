@@ -1,9 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections;
-using DG.Tweening;
+using System.Collections.Generic;
+using UnityEngine.Serialization;
 
 public class PlayerAttack : MonoBehaviour
 {
+#if false
+    // Legacy 3-step combo. Keep this disabled until combo sprite sheets are added.
     [Header("공격 설정")]
     public BoxCollider2D hitbox;
     public SpriteRenderer hitboxRenderer;
@@ -200,5 +203,152 @@ public class PlayerAttack : MonoBehaviour
             damageable.TakeDamage(finalDamage, gameObject);
             Debug.Log($"공격 -> {other.name} : {finalDamage} 데미지 (받피증 x{ampMult:0.00})");
         }
+    }
+}
+#endif
+
+    [Header("임시 단일 공격")]
+    [Tooltip("현재 Player_Attack 애니메이션에 맞춘 단일 공격 피해량입니다.")]
+    [FormerlySerializedAs("damageA")]
+    public int temporaryDamage = 10;
+    [SerializeField, Min(0f)] private float hitboxStartDelay = 0.16f;
+    [SerializeField, Min(0.01f)] private float hitboxActiveDuration = 0.10f;
+    [SerializeField, Min(0.1f)] private float attackDuration = 0.42f;
+    [SerializeField] private string attackTriggerName = "AttackTrigger";
+
+    [Header("공격 참조")]
+    public BoxCollider2D hitbox;
+    public SpriteRenderer hitboxRenderer;
+
+    [Header("디버그")]
+    public bool showHitboxDebug = false;
+
+    private readonly HashSet<IDamageable> damagedTargets = new HashSet<IDamageable>();
+
+    private Animator animator;
+    private PlayerParry parry;
+    private Collider2D playerCollider;
+    private Coroutine attackRoutine;
+    private bool isAttacking;
+    private bool isHitboxActive;
+
+    public bool IsAttacking => isAttacking;
+
+    private void Awake()
+    {
+        animator = GetComponent<Animator>();
+        parry = GetComponent<PlayerParry>();
+        playerCollider = GetComponent<Collider2D>();
+
+        SetHitboxActive(false);
+
+        if (playerCollider != null && hitbox != null)
+        {
+            Physics2D.IgnoreCollision(playerCollider, hitbox, true);
+        }
+    }
+
+    private void Update()
+    {
+        if (parry != null && parry.IsStunned)
+        {
+            return;
+        }
+
+        if (Input.GetMouseButtonDown(0) && !isAttacking)
+        {
+            StartSingleAttack();
+        }
+    }
+
+    private void StartSingleAttack()
+    {
+        isAttacking = true;
+        damagedTargets.Clear();
+
+        if (animator != null)
+        {
+            animator.ResetTrigger(attackTriggerName);
+            animator.SetTrigger(attackTriggerName);
+        }
+
+        if (attackRoutine != null)
+        {
+            StopCoroutine(attackRoutine);
+        }
+
+        attackRoutine = StartCoroutine(SingleAttackRoutine());
+    }
+
+    private IEnumerator SingleAttackRoutine()
+    {
+        yield return new WaitForSeconds(hitboxStartDelay);
+        SetHitboxActive(true);
+
+        yield return new WaitForSeconds(hitboxActiveDuration);
+        SetHitboxActive(false);
+
+        float recoveryTime = Mathf.Max(0f, attackDuration - hitboxStartDelay - hitboxActiveDuration);
+        if (recoveryTime > 0f)
+        {
+            yield return new WaitForSeconds(recoveryTime);
+        }
+
+        isAttacking = false;
+        attackRoutine = null;
+    }
+
+    private void SetHitboxActive(bool active)
+    {
+        isHitboxActive = active;
+
+        if (hitbox != null)
+        {
+            hitbox.enabled = active;
+        }
+
+        if (hitboxRenderer != null)
+        {
+            hitboxRenderer.enabled = active && showHitboxDebug;
+            if (showHitboxDebug)
+            {
+                hitboxRenderer.color = new Color(1f, 0.15f, 0.15f, 0.35f);
+            }
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (!isHitboxActive || other == null || other.gameObject == gameObject)
+        {
+            return;
+        }
+
+        IDamageable damageable = other.GetComponentInParent<IDamageable>();
+        if (damageable == null || !damagedTargets.Add(damageable))
+        {
+            return;
+        }
+
+        float damage = temporaryDamage;
+        EnemyDamageAmpData amp = other.GetComponent<EnemyDamageAmpData>();
+        if (amp != null)
+        {
+            damage *= amp.Multiplier;
+        }
+
+        damageable.TakeDamage(damage, gameObject);
+    }
+
+    private void OnDisable()
+    {
+        if (attackRoutine != null)
+        {
+            StopCoroutine(attackRoutine);
+            attackRoutine = null;
+        }
+
+        isAttacking = false;
+        SetHitboxActive(false);
     }
 }

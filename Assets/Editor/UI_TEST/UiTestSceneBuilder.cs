@@ -16,14 +16,14 @@ internal static class UiTestSceneBuilder
     {
         try
         {
-            YarnHealthSprites sprites = YarnHealthSpriteProvider.Load();
+            UiHudSprites sprites = UiHudSpriteProvider.Load();
             Health playerHealth = FindPlayerHealth();
             NeedleSkillManager needleSkill = FindNeedleSkill(playerHealth);
             ConfigureTestHealth(playerHealth);
 
             GameObject canvasObject = CreateCanvas(useUndo);
-            YarnHealthHudBuilder.Build(canvasObject.transform, playerHealth, sprites);
-            ParryNeedleGaugeBuilder.Build(canvasObject.transform, needleSkill);
+            RectTransform playerHud = YarnHealthHudBuilder.Build(canvasObject.transform, playerHealth, sprites);
+            ParryNeedleGaugeBuilder.Build(playerHud, needleSkill, sprites.NeedleCharges);
             PauseMenuBuilder.Build(canvasObject);
 
             EnsureEventSystem();

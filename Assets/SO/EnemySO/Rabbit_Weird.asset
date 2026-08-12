@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: Rabbit_Weird
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   EnemyName: "\uC774\uC0C1\uD55C \uD1A0\uB07C"
-  EnemyDescription: "\uC138 \uBC88 \uC5F0\uC18D \uBAB8\uC744 \uB358\uC9C0\uACE0 \uAC00\uAE4C\uC6B4 \uC801\uC5D0\uAC8C \uC55E\uBC1C\uC744 \uD718\uB450\uB974\uB294 \uD1A0\uB07C \uBCC0\uC885."
-  MaxHP: 55
+  EnemyDescription: "\uC138 \uBC88 \uC5F0\uC18D \uBAB8\uC744 \uB358\uC9C0\uACE0 \uAC00\uAE4C\uC6B4
+    \uC801\uC5D0\uAC8C \uC55E\uBC1C\uC744 \uD718\uB450\uB974\uB294 \uD1A0\uB07C \uBCC0\uC885."
+  MaxHP: 20
   Damage: 8
   MoveSpeed: 3.5
   PatrolSpeed: 2.2

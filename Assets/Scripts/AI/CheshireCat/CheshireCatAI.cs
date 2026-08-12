@@ -128,14 +128,15 @@ public class CheshireCatAI : EnemyAIBase
     [SerializeField, Min(0.1f)] private float patternCGroggyDuration = 3f;
     [SerializeField, Min(1f)] private float patternCGroggyNeedleDamageMultiplier = 3f;
     [FormerlySerializedAs("patternCCounterReboundForce")]
-    [SerializeField, Min(0f)] private float patternCCounterReboundSpeed = 16f;
-    [SerializeField, Min(0.01f)] private float patternCCounterReboundDuration = 0.18f;
-    [SerializeField, Min(0f)] private float patternCCounterReboundLift = 2f;
+    [SerializeField, Min(0f)] private float patternCCounterReboundSpeed = 24f;
+    [SerializeField, Min(0.01f)] private float patternCCounterReboundDuration = 0.1f;
+    [SerializeField, Min(0f)] private float patternCCounterReboundLift = 3f;
     [SerializeField] private Color patternCGroggyTint = new Color(1f, 0.82f, 0.25f, 1f);
     [SerializeField, Min(0.05f)] private float patternCShockwaveVisualDuration = 0.4f;
     [SerializeField] private Color patternCShockwaveColor = new Color(0.35f, 0.9f, 1f, 0.9f);
 
     [Header("Pattern D - Scissor Rain")]
+    [SerializeField] private CheshireProjectile patternDFallingObjectPrefab;
     [SerializeField, Min(1f)] private float patternDDuration = 14f;
     [SerializeField, Min(0.05f)] private float patternDHazardSpawnInterval = 0.38f;
     [SerializeField, Min(0.05f)] private float patternDSpecialSpawnInterval = 0.7f;
@@ -150,20 +151,17 @@ public class CheshireCatAI : EnemyAIBase
     [SerializeField, Min(0f)] private float patternDSpawnHeightOffset = 4f;
     [SerializeField, Min(0f)] private float patternDDespawnPadding = 2f;
     [SerializeField, Min(1f)] private float patternDSpawnWidthMultiplier = 1.35f;
-    [SerializeField, Min(0.1f)] private float patternDFallSpeedMin = 4f;
-    [SerializeField, Min(0.1f)] private float patternDFallSpeedMax = 7f;
+    [SerializeField, Min(0.1f)] private float patternDFallSpeedMin = 7f;
+    [SerializeField, Min(0.1f)] private float patternDFallSpeedMax = 11f;
     [SerializeField, Min(0f)] private float patternDHorizontalDrift = 2.2f;
     [SerializeField, Min(0f)] private float patternDAngularSpeed = 120f;
     [SerializeField, Min(0.1f)] private float patternDObjectScale = 1f;
     [SerializeField, Min(0)] private int patternDCutParticleBurstCount = 10;
-    [SerializeField, Range(0f, 1f)] private float patternDFakePinkChance = 0.5f;
     [SerializeField] private Color patternDHazardParticleColor = new Color(0.68f, 0.72f, 0.78f, 0.72f);
     [FormerlySerializedAs("patternDTargetAuraColor")]
-    [SerializeField] private Color patternDTargetParticleColor = new Color(1f, 0.2f, 0.62f, 0.95f);
+    [SerializeField] private Color patternDTargetParticleColor = new Color(1f, 0.05f, 0.32f, 1f);
     [FormerlySerializedAs("patternDFakeAuraColor")]
-    [SerializeField] private Color patternDFakeParticleColor = new Color(0.58f, 0.18f, 0.9f, 0.95f);
-    [FormerlySerializedAs("patternDFakePinkColor")]
-    [SerializeField] private Color patternDFakePinkParticleColor = new Color(0.9f, 0.16f, 0.72f, 0.95f);
+    [SerializeField] private Color patternDFakeParticleColor = new Color(0.05f, 0.9f, 1f, 1f);
 
     [Header("Afterimage")]
     [SerializeField, Min(0.05f)] private float afterimageInterval = 0.14f;
@@ -421,10 +419,12 @@ public class CheshireCatAI : EnemyAIBase
             case State.Stunned:
                 SetSmokeForm(false);
                 Fsm.StopAllMovement();
+                PlayIdleAnimation();
                 break;
             case State.Groggy:
                 SetSmokeForm(false);
                 Fsm.StopAllMovement();
+                PlayIdleAnimation();
                 if (Fsm.Sr != null) Fsm.Sr.color = patternCGroggyTint;
                 break;
         }
@@ -1008,9 +1008,7 @@ public class CheshireCatAI : EnemyAIBase
         }
         else if (kind == FallingObjectKind.Fake)
         {
-            particleColor = Random.value < patternDFakePinkChance
-                ? patternDFakePinkParticleColor
-                : patternDFakeParticleColor;
+            particleColor = patternDFakeParticleColor;
         }
 
         fallingObject.gameObject.SetActive(true);
@@ -1280,7 +1278,7 @@ public class CheshireCatAI : EnemyAIBase
         Vector2 targetSnapshot = Fsm.Player.position;
         Vector2 baseDirection = (targetSnapshot - origin).normalized;
         if (baseDirection.sqrMagnitude < 0.01f) baseDirection = Vector2.right;
-        float damage = Fsm.Data != null ? Fsm.Data.Damage : 20f;
+        float damage = 10f;
 
         if (Random.value < 0.5f)
         {
@@ -1666,7 +1664,9 @@ public class CheshireCatAI : EnemyAIBase
 
     private CheshireFallingObject CreatePatternDObject(int index)
     {
-        CheshireProjectile fallingOrbPrefab = patternBProjectilePrefab != null
+        CheshireProjectile fallingOrbPrefab = patternDFallingObjectPrefab != null
+            ? patternDFallingObjectPrefab
+            : patternBProjectilePrefab != null
             ? patternBProjectilePrefab
             : projectilePrefab;
         GameObject fallingObject = fallingOrbPrefab != null
@@ -2055,7 +2055,6 @@ public class CheshireCatAI : EnemyAIBase
         patternDAngularSpeed = Mathf.Max(0f, patternDAngularSpeed);
         patternDObjectScale = Mathf.Max(0.1f, patternDObjectScale);
         patternDCutParticleBurstCount = Mathf.Max(0, patternDCutParticleBurstCount);
-        patternDFakePinkChance = Mathf.Clamp01(patternDFakePinkChance);
         afterimageInterval = Mathf.Max(0.05f, afterimageInterval);
         afterimageLifetime = Mathf.Max(0.05f, afterimageLifetime);
         afterimageMinimumDistance = Mathf.Max(0.01f, afterimageMinimumDistance);

@@ -241,8 +241,8 @@ MonoBehaviour:
   impactMask:
     serializedVersion: 2
     m_Bits: 520
-  embeddedDuration: 0.65
-  pullOutDuration: 0.3
+  embeddedDuration: 0.4
+  pullOutDuration: 0.5
   pullOutDistance: 1.25
   pullOutLift: 0.35
   recoveryDuration: 0.6

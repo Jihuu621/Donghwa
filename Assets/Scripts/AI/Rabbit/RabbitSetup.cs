@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class RabbitSetup : EnemyAIBase
@@ -41,6 +42,9 @@ public class RabbitSetup : EnemyAIBase
     private float _lungeTimer;
     private float _lungeTime;
     private float _lungeVx;
+    private readonly List<Collider2D> _ignoredOwnColliders = new List<Collider2D>();
+    private readonly List<Collider2D> _ignoredPlayerColliders = new List<Collider2D>();
+    private bool _ignoringPlayerCollision;
 
     protected override void Awake()
     {
@@ -48,10 +52,16 @@ public class RabbitSetup : EnemyAIBase
         _startPosition = transform.position;
     }
 
-    private void Start() => ChangeState(State.Idle);
+    private void Start()
+    {
+        SetPlayerCollisionIgnored(true);
+        ChangeState(State.Idle);
+    }
 
     private void Update()
     {
+        if (!_ignoringPlayerCollision) SetPlayerCollisionIgnored(true);
+
         switch (_state)
         {
             case State.Idle: UpdateIdle(); break;
@@ -225,6 +235,70 @@ public class RabbitSetup : EnemyAIBase
         float x = Mathf.Max(0.0001f, Mathf.Abs(scale.x));
         scale.x = (DefaultFacingRight ? faceRight : !faceRight) ? x : -x;
         transform.localScale = scale;
+    }
+
+    private void SetPlayerCollisionIgnored(bool ignored)
+    {
+        if (ignored == _ignoringPlayerCollision) return;
+
+        if (!ignored)
+        {
+            for (int ownIndex = 0; ownIndex < _ignoredOwnColliders.Count; ownIndex++)
+            {
+                Collider2D own = _ignoredOwnColliders[ownIndex];
+                if (own == null) continue;
+
+                for (int playerIndex = 0; playerIndex < _ignoredPlayerColliders.Count; playerIndex++)
+                {
+                    Collider2D player = _ignoredPlayerColliders[playerIndex];
+                    if (player != null) Physics2D.IgnoreCollision(own, player, false);
+                }
+            }
+
+            _ignoredOwnColliders.Clear();
+            _ignoredPlayerColliders.Clear();
+            _ignoringPlayerCollision = false;
+            return;
+        }
+
+        if (Fsm.Player == null) return;
+
+        Collider2D[] ownColliders = GetComponentsInChildren<Collider2D>();
+        for (int i = 0; i < ownColliders.Length; i++)
+        {
+            if (ownColliders[i] != null && !ownColliders[i].isTrigger)
+            {
+                _ignoredOwnColliders.Add(ownColliders[i]);
+            }
+        }
+
+        Collider2D[] playerColliders = Fsm.Player.GetComponentsInChildren<Collider2D>();
+        for (int i = 0; i < playerColliders.Length; i++)
+        {
+            if (playerColliders[i] != null && !playerColliders[i].isTrigger)
+            {
+                _ignoredPlayerColliders.Add(playerColliders[i]);
+            }
+        }
+
+        for (int ownIndex = 0; ownIndex < _ignoredOwnColliders.Count; ownIndex++)
+        {
+            Collider2D own = _ignoredOwnColliders[ownIndex];
+            if (own == null) continue;
+
+            for (int playerIndex = 0; playerIndex < _ignoredPlayerColliders.Count; playerIndex++)
+            {
+                Collider2D player = _ignoredPlayerColliders[playerIndex];
+                if (player != null) Physics2D.IgnoreCollision(own, player, true);
+            }
+        }
+
+        _ignoringPlayerCollision = true;
+    }
+
+    private void OnDisable()
+    {
+        SetPlayerCollisionIgnored(false);
     }
 
     private void OnValidate()

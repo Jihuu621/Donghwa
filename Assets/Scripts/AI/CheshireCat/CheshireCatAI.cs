@@ -12,6 +12,7 @@ public class CheshireCatAI : EnemyAIBase
     private static readonly int TeleportAnimationState = Animator.StringToHash("Base Layer.Cat_Attack1");
     private static readonly int TeleportAppearAnimationState = Animator.StringToHash("Base Layer.Cat_TeleportAppear");
     private static readonly int ScratchDashAnimationState = Animator.StringToHash("Base Layer.Cat_Yakzin");
+    private static readonly int PatternCChargeAnimationState = Animator.StringToHash("Base Layer.Cat_Gangzin");
     private const float ScratchDashAnimationLength = 0.4166667f;
 
     public enum State
@@ -378,7 +379,7 @@ public class CheshireCatAI : EnemyAIBase
                 break;
             case State.PatternCCharge:
                 SetSmokeForm(false);
-                PlayIdleAnimation();
+                PlayPatternCChargeAnimation();
                 BeginPatternCCharge();
                 break;
             case State.PatternCImpactPause:
@@ -1883,6 +1884,13 @@ public class CheshireCatAI : EnemyAIBase
         if (Fsm.Anim == null) return;
         Fsm.Anim.speed = ScratchDashAnimationLength / Mathf.Max(scratchDashDuration, 0.01f);
         Fsm.Anim.Play(ScratchDashAnimationState, 0, 0f);
+    }
+
+    private void PlayPatternCChargeAnimation()
+    {
+        if (Fsm.Anim == null) return;
+        Fsm.Anim.speed = 1f;
+        Fsm.Anim.Play(PatternCChargeAnimationState, 0, 0f);
     }
 
     private static Vector2 Rotate(Vector2 direction, float degrees)

@@ -113,11 +113,13 @@ public sealed class RabbitWeirdSetup : EnemyAIBase
 
     private void Start()
     {
+        SetPlayerCollisionIgnored(true);
         ChangeState(State.Idle);
     }
 
     private void Update()
     {
+        if (!_ignoringPlayerCollision) SetPlayerCollisionIgnored(true);
         _attackCooldownTimer = Mathf.Max(0f, _attackCooldownTimer - Time.deltaTime);
 
         switch (_state)
@@ -150,10 +152,6 @@ public sealed class RabbitWeirdSetup : EnemyAIBase
     private void ChangeState(State next)
     {
         if (_state == next) return;
-
-        bool leavingBodyCombo = (_state == State.BodySlamPrep || _state == State.BodySlam) &&
-                                next != State.BodySlamPrep && next != State.BodySlam;
-        if (leavingBodyCombo) SetPlayerCollisionIgnored(false);
 
         _state = next;
         _stateTimer = 0f;
@@ -198,7 +196,6 @@ public sealed class RabbitWeirdSetup : EnemyAIBase
                 PlayIdle();
                 break;
             case State.Stunned:
-                SetPlayerCollisionIgnored(false);
                 StopAllMovement();
                 PlayIdle();
                 if (Fsm.Sr != null) Fsm.Sr.color = Color.cyan;
@@ -297,7 +294,6 @@ public sealed class RabbitWeirdSetup : EnemyAIBase
             return;
         }
 
-        SetPlayerCollisionIgnored(true);
         _stateTimer = 0f;
         _bodySlamsStarted++;
         _bodyDamageDealt = false;
@@ -572,8 +568,24 @@ public sealed class RabbitWeirdSetup : EnemyAIBase
         }
 
         if (Fsm.Player == null) return;
-        _ignoredOwnColliders.AddRange(GetComponentsInChildren<Collider2D>());
-        _ignoredPlayerColliders.AddRange(Fsm.Player.GetComponentsInChildren<Collider2D>());
+        Collider2D[] ownColliders = GetComponentsInChildren<Collider2D>();
+        for (int i = 0; i < ownColliders.Length; i++)
+        {
+            if (ownColliders[i] != null && !ownColliders[i].isTrigger)
+            {
+                _ignoredOwnColliders.Add(ownColliders[i]);
+            }
+        }
+
+        Collider2D[] playerColliders = Fsm.Player.GetComponentsInChildren<Collider2D>();
+        for (int i = 0; i < playerColliders.Length; i++)
+        {
+            if (playerColliders[i] != null && !playerColliders[i].isTrigger)
+            {
+                _ignoredPlayerColliders.Add(playerColliders[i]);
+            }
+        }
+
         for (int ownIndex = 0; ownIndex < _ignoredOwnColliders.Count; ownIndex++)
         {
             Collider2D own = _ignoredOwnColliders[ownIndex];

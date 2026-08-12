@@ -1,22 +1,25 @@
 fileFormatVersion: 2
-guid: ef2abc64f55b61b4ebfdf777b79c455d
+guid: 414a6a683ee6ab34083cf7b42885dd2e
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2397667516270371531
-    second: Cat_Gangzin_0
+      213: 4322363496624724122
+    second: Bird_Bbobgi_0
   - first:
-      213: -8779021125272299544
-    second: Cat_Gangzin_1
+      213: 1895331973700012104
+    second: Bird_Bbobgi_1
   - first:
-      213: -5424456676502915248
-    second: Cat_Gangzin_2
+      213: -5476354798604279074
+    second: Bird_Bbobgi_2
   - first:
-      213: 2305383136695746369
-    second: Cat_Gangzin_3
+      213: -4564437271244613116
+    second: Bird_Bbobgi_3
   - first:
-      213: 4972890986000031548
-    second: Cat_Gangzin_4
+      213: -1401922544342641637
+    second: Bird_Bbobgi_4
+  - first:
+      213: 903135171420427037
+    second: Bird_Bbobgi_5
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -63,7 +66,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 2000
+  spritePixelsToUnits: 1650
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -112,111 +115,133 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Cat_Gangzin_0
+      name: Bird_Bbobgi_0
       rect:
         serializedVersion: 2
-        x: 1119
+        x: 415
         y: 4479
-        width: 1762
-        height: 1506
+        width: 1698
+        height: 1026
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 53d163be816c9bed0800000000000000
-      internalID: -2397667516270371531
+      spriteID: a989e6603be1cfb30800000000000000
+      internalID: 4322363496624724122
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Cat_Gangzin_1
+      name: Bird_Bbobgi_1
       rect:
         serializedVersion: 2
-        x: 4991
-        y: 4575
-        width: 1506
-        height: 1730
+        x: 2367
+        y: 4479
+        width: 1634
+        height: 994
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 8e79e70ccc6aa2680800000000000000
-      internalID: -8779021125272299544
+      spriteID: 84844df53629d4a10800000000000000
+      internalID: 1895331973700012104
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Cat_Gangzin_2
+      name: Bird_Bbobgi_2
       rect:
         serializedVersion: 2
-        x: 1183
-        y: 2271
-        width: 1730
-        height: 1794
+        x: 255
+        y: 2239
+        width: 1602
+        height: 1090
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 0573c89846578b4b0800000000000000
-      internalID: -5424456676502915248
+      spriteID: ed2af2d53541004b0800000000000000
+      internalID: -5476354798604279074
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Cat_Gangzin_3
+      name: Bird_Bbobgi_3
       rect:
         serializedVersion: 2
-        x: 4383
-        y: 2495
-        width: 2018
-        height: 1186
+        x: 2367
+        y: 2239
+        width: 1634
+        height: 994
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 14ffce59fbd5eff10800000000000000
-      internalID: 2305383136695746369
+      spriteID: 40a59e73c7cd7a0c0800000000000000
+      internalID: -4564437271244613116
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Cat_Gangzin_4
+      name: Bird_Bbobgi_4
       rect:
         serializedVersion: 2
-        x: 223
+        x: 255
+        y: 0
+        width: 1602
+        height: 1089
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b1458d5afde5b8ce0800000000000000
+      internalID: -1401922544342641637
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Bird_Bbobgi_5
+      rect:
+        serializedVersion: 2
+        x: 2623
         y: 63
-        width: 3586
-        height: 1282
+        width: 1857
+        height: 1570
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: c3f16471102430540800000000000000
-      internalID: 4972890986000031548
+      spriteID: d131da447a4988c00800000000000000
+      internalID: 903135171420427037
       vertices: []
       indices: 
       edges: []
@@ -235,11 +260,12 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Cat_Gangzin_0: -2397667516270371531
-      Cat_Gangzin_1: -8779021125272299544
-      Cat_Gangzin_2: -5424456676502915248
-      Cat_Gangzin_3: 2305383136695746369
-      Cat_Gangzin_4: 4972890986000031548
+      Bird_Bbobgi_0: 4322363496624724122
+      Bird_Bbobgi_1: 1895331973700012104
+      Bird_Bbobgi_2: -5476354798604279074
+      Bird_Bbobgi_3: -4564437271244613116
+      Bird_Bbobgi_4: -1401922544342641637
+      Bird_Bbobgi_5: 903135171420427037
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -5,6 +5,7 @@ public class BirdSetup : EnemyAIBase
 {
     private static readonly int MoveAnimation = Animator.StringToHash("Base Layer.Bird_Move");
     private static readonly int AttackAnimation = Animator.StringToHash("Base Layer.Bird_Attack");
+    private static readonly int PullOutAnimation = Animator.StringToHash("Base Layer.Bird_Bbobgi");
     private const float DivePoseNormalizedTime = 0.9f;
     // The dive artwork points horizontally left by default.
     private const float LeftDiveBaseAngle = 180f;
@@ -58,8 +59,8 @@ public class BirdSetup : EnemyAIBase
     [SerializeField] private LayerMask impactMask = (1 << 3) | (1 << 9);
 
     [Header("Beak Recovery")]
-    [SerializeField, Min(0f)] private float embeddedDuration = 0.65f;
-    [SerializeField, Min(0.01f)] private float pullOutDuration = 0.3f;
+    [SerializeField, Min(0f)] private float embeddedDuration = 0.4f;
+    [SerializeField, Min(0.01f)] private float pullOutDuration = 0.5f;
     [SerializeField, Min(0.1f)] private float pullOutDistance = 1.25f;
     [SerializeField, Min(0f)] private float pullOutLift = 0.35f;
     [SerializeField, Min(0f)] private float recoveryDuration = 0.6f;
@@ -342,7 +343,7 @@ public class BirdSetup : EnemyAIBase
         _pullOutStart = Fsm.Rb != null ? Fsm.Rb.position : (Vector2)transform.position;
         _pullOutTarget = _pullOutStart - _diveDirection * pullOutDistance + Vector2.up * pullOutLift;
         _embeddedRotation = transform.rotation;
-        PlayAnimation(MoveAnimation, 1f, 0f);
+        PlayAnimation(PullOutAnimation, 1f, 0f);
     }
 
     private void HoldDivePose()

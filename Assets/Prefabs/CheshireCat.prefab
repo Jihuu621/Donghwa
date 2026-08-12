@@ -266,6 +266,16 @@ MonoBehaviour:
   patternBProjectileScaleMultiplier: 3
   patternBMainProjectileColor: {r: 1, g: 1, b: 1, a: 0.5019608}
   patternBCloneProjectileColor: {r: 0.6933962, g: 0.962426, b: 1, a: 0.5019608}
+  laughingAnimationDuration: 0.6
+  bossMusicClip: {fileID: 8300000, guid: 436e824932fc6d84eab7d65cced24cb9, type: 3}
+  dashSoundClip: {fileID: 8300000, guid: bc760500e6f30a54d95f47f6be6d284a, type: 3}
+  projectileSpawnSoundClip: {fileID: 8300000, guid: 2d1a28c1408b76d4a904e279822b2f54, type: 3}
+  patternDStartSoundClip: {fileID: 8300000, guid: f2516d6425d79b84e8baec5673336494, type: 3}
+  dashImpactSoundClip1: {fileID: 8300000, guid: 86195ebf15cc4458a4f5394f622beed1, type: 3}
+  dashImpactSoundClip2: {fileID: 8300000, guid: f539ad6c069a45a3b0462202c78b7eb2, type: 3}
+  dashImpactSoundClip3: {fileID: 8300000, guid: c12402bdbd20432f9a7d75f70941a1e9, type: 3}
+  musicVolume: 0.45
+  soundEffectVolume: 0.8
   patternBCloneDebuff: 0
   patternBCloneDebuffDuration: 2
   patternBCloneDebuffValue: 0.3
@@ -298,14 +308,12 @@ MonoBehaviour:
   patternCShockwaveColor: {r: 0.35, g: 0.9, b: 1, a: 0.9}
   patternDFallingObjectPrefab: {fileID: 742100000000000006, guid: 4cba50f1e21a3964c86e6fc9b2df9e2c, type: 3}
   patternDDuration: 14
-  patternDHazardSpawnInterval: 0.2
+  patternDFakeSpawnInterval: 0.2
   patternDSpecialSpawnInterval: 0.5
   patternDTargetAppearanceMin: 5
   patternDTargetAppearanceMax: 7
-  patternDFakeAppearanceMin: 5
-  patternDFakeAppearanceMax: 7
   patternDRequiredTargetCuts: 3
-  patternDFakeCutsToFail: 2
+  patternDFakeCutsToFail: 3
   patternDFallingObjectDamage: 10
   patternDFakeCutDamage: 20
   patternDSpawnHeightOffset: 4
@@ -317,7 +325,6 @@ MonoBehaviour:
   patternDAngularSpeed: 120
   patternDObjectScale: 1
   patternDCutParticleBurstCount: 10
-  patternDHazardParticleColor: {r: 0.68, g: 0.72, b: 0.78, a: 0.72}
   patternDTargetParticleColor: {r: 1, g: 0.05, b: 0.32, a: 1}
   patternDFakeParticleColor: {r: 0.05, g: 0.9, b: 1, a: 1}
   afterimageInterval: 0.14

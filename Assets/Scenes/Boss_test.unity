@@ -6857,20 +6857,28 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 66412813307373279, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
+      propertyPath: guardKey
+      value: 103
+      objectReference: {fileID: 0}
+    - target: {fileID: 66412813307373279, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
       propertyPath: failWindow
       value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 66412813307373279, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
       propertyPath: guardWindow
-      value: 0.8
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 66412813307373279, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
       propertyPath: parryWindow
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 66412813307373279, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
+      propertyPath: recoveryDuration
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 66412813307373279, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
       propertyPath: perfectGuardWindow
-      value: 1
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 108621338733315259, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
       propertyPath: jumpForce

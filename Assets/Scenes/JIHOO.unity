@@ -3744,6 +3744,9 @@ MonoBehaviour:
   currentGauge: 0
   gaugeRegenPerSec: 1
   parryReward: 5
+  guardSuccessSound: {fileID: 8300000, guid: 40367e69e05b423c9c4fbcdf75f1822e, type: 3}
+  guardFailedSound: {fileID: 8300000, guid: 97b415350f374b77bc7f9d911f18e2cf, type: 3}
+  guardSoundVolume: 0.8
 --- !u!114 &1903764464
 MonoBehaviour:
   m_ObjectHideFlags: 0

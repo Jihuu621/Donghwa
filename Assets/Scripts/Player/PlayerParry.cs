@@ -49,10 +49,16 @@ public class PlayerParry : MonoBehaviour
     [SerializeField] private GameObject good;
     [SerializeField] private GameObject bad;
 
+    [Header("가드 사운드")]
+    [SerializeField] private AudioClip guardSuccessSound;
+    [SerializeField] private AudioClip guardFailedSound;
+    [SerializeField, Range(0f, 1f)] private float guardSoundVolume = 0.8f;
+
     private GuardState _guardState = GuardState.Ready;
     private float _stateTimer;
     private float _stunTimer;
     private Animator animator;
+    private AudioSource _guardAudioSource;
 
     // 기존 디버거와 체셔캣 연동에서 사용하는 공개 판정입니다.
     // 실패 선딜은 제거됐지만 기존 디버거 호환을 위해 false로 유지합니다.
@@ -66,6 +72,11 @@ public class PlayerParry : MonoBehaviour
     private void Awake()
     {
         animator = GetComponent<Animator>();
+        _guardAudioSource = gameObject.AddComponent<AudioSource>();
+        _guardAudioSource.playOnAwake = false;
+        _guardAudioSource.loop = false;
+        _guardAudioSource.spatialBlend = 0f;
+        _guardAudioSource.volume = guardSoundVolume;
     }
 
     private void Start()
@@ -169,6 +180,7 @@ public class PlayerParry : MonoBehaviour
 
         if (IsParryTime)
         {
+            PlayGuardSound(guardSuccessSound);
             ShowFeedback(great);
             if (CamaraShake.Instance != null) CamaraShake.Instance.Shake();
 
@@ -187,11 +199,15 @@ public class PlayerParry : MonoBehaviour
         {
             float reducedDamage = damage * (1f - guardDamageReduce);
             currentGauge = Mathf.Max(0f, currentGauge - guardPenalty);
-            ShowFeedback(good);
 
             if (currentGauge <= 0f)
             {
                 BreakGuard();
+            }
+            else
+            {
+                PlayGuardSound(guardSuccessSound);
+                ShowFeedback(good);
             }
 
             Debug.Log($"<color=yellow>[플레이어] 가드 성공! 피해 {reducedDamage:0.##}</color>");
@@ -204,6 +220,7 @@ public class PlayerParry : MonoBehaviour
 
     private void BreakGuard()
     {
+        PlayGuardSound(guardFailedSound);
         _stunTimer = guardBreakStunDuration;
         SetGuardState(GuardState.Recovery, Mathf.Max(recoveryDuration, guardBreakStunDuration));
         ShowFeedback(bad);
@@ -213,6 +230,12 @@ public class PlayerParry : MonoBehaviour
     private void ShowFeedback(GameObject target)
     {
         if (target != null) StartCoroutine(ShowFeedbackRoutine(target));
+    }
+
+    private void PlayGuardSound(AudioClip clip)
+    {
+        if (clip == null || _guardAudioSource == null) return;
+        _guardAudioSource.PlayOneShot(clip);
     }
 
     private static IEnumerator ShowFeedbackRoutine(GameObject target)
@@ -247,6 +270,7 @@ public class PlayerParry : MonoBehaviour
         guardBreakStunDuration = Mathf.Max(0f, guardBreakStunDuration);
         maxGauge = Mathf.Max(1f, maxGauge);
         currentGauge = Mathf.Clamp(currentGauge, 0f, maxGauge);
+        guardSoundVolume = Mathf.Clamp01(guardSoundVolume);
         /* 패링 히트 게이지 검증 비활성화
         maxParryHitGauge = Mathf.Max(1f, maxParryHitGauge);
         parryHitGauge = Mathf.Clamp(parryHitGauge, 0f, maxParryHitGauge);

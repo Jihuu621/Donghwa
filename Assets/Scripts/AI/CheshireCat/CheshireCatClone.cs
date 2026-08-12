@@ -194,6 +194,7 @@ public class CheshireCatClone : MonoBehaviour, IDamageable
     public void TakeDamage(float damage, GameObject source)
     {
         if (!_active || _ending || damage <= 0f) return;
+        _owner?.NotifyCloneHit(this);
         _health -= damage;
         if (_health <= 0f) DeactivateImmediately();
     }

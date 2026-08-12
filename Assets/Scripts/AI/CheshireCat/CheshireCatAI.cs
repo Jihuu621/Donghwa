@@ -13,7 +13,9 @@ public class CheshireCatAI : EnemyAIBase
     private static readonly int TeleportAppearAnimationState = Animator.StringToHash("Base Layer.Cat_TeleportAppear");
     private static readonly int ScratchDashAnimationState = Animator.StringToHash("Base Layer.Cat_Yakzin");
     private static readonly int PatternCChargeAnimationState = Animator.StringToHash("Base Layer.Cat_Gangzin");
+    private static readonly int PatternBFireAnimationState = Animator.StringToHash("Base Layer.Cat_PatternB");
     private const float ScratchDashAnimationLength = 0.4166667f;
+    private const float PatternBFireAnimationLength = 1f;
 
     public enum State
     {
@@ -209,6 +211,7 @@ public class CheshireCatAI : EnemyAIBase
     private float _patternBDirectionTimer;
     private float _patternBShotTimer;
     private float _patternBPostShotTimer;
+    private float _patternBFireAnimationTimer;
     private Vector2 _hoverAnchor;
     private Vector2 _hoverTargetPosition;
     private float _hoverDirectionTimer;
@@ -364,6 +367,7 @@ public class CheshireCatAI : EnemyAIBase
                 _patternBVelocitySmooth = Vector2.zero;
                 _patternBShotTimer = patternBInitialShotDelay;
                 _patternBPostShotTimer = patternBMoveDurationAfterShot;
+                _patternBFireAnimationTimer = 0f;
                 PickPatternBMoveDirection();
                 break;
             case State.PatternBExit:
@@ -582,6 +586,12 @@ public class CheshireCatAI : EnemyAIBase
     private void UpdatePatternBActive()
     {
         UpdatePatternBMovement();
+
+        if (_patternBFireAnimationTimer > 0f)
+        {
+            _patternBFireAnimationTimer -= Time.deltaTime;
+            if (_patternBFireAnimationTimer <= 0f) PlayIdleAnimation();
+        }
 
         if (!_hasAttacked)
         {
@@ -1220,7 +1230,8 @@ public class CheshireCatAI : EnemyAIBase
             fromClone,
             source,
             patternBProjectileDeflectSpeedMultiplier,
-            patternBProjectileDeflectHomingDelay);
+            patternBProjectileDeflectHomingDelay,
+            patternBMoveDurationAfterShot + smokeDuration);
     }
 
     public void SetPatternBCloneDebuff(StatusKeyword keyword, float duration, float value)
@@ -1253,6 +1264,7 @@ public class CheshireCatAI : EnemyAIBase
 
     private void FirePatternBVolley()
     {
+        PlayPatternBFireAnimation();
         FirePatternBProjectile(transform.position, false, gameObject);
 
         for (int i = 0; i < _clones.Count; i++)
@@ -1891,6 +1903,14 @@ public class CheshireCatAI : EnemyAIBase
         if (Fsm.Anim == null) return;
         Fsm.Anim.speed = 1f;
         Fsm.Anim.Play(PatternCChargeAnimationState, 0, 0f);
+    }
+
+    private void PlayPatternBFireAnimation()
+    {
+        _patternBFireAnimationTimer = PatternBFireAnimationLength;
+        if (Fsm.Anim == null) return;
+        Fsm.Anim.speed = 1f;
+        Fsm.Anim.Play(PatternBFireAnimationState, 0, 0f);
     }
 
     private static Vector2 Rotate(Vector2 direction, float degrees)

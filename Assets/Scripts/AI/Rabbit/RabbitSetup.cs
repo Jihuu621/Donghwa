@@ -15,6 +15,7 @@ public class RabbitSetup : EnemyAIBase
     public float LungeDistanceMultiplier = 1.6f;
     public float LungeAccel = 1.2f;
     public float LungeArcLowFactor = 0.5f;
+    [Min(0.05f)] public float LungeHitRadius = 0.65f;
     [Header("Ranges")]
     public float DetectRange = 10f;
     public float ChaseRange = 15f;
@@ -42,6 +43,8 @@ public class RabbitSetup : EnemyAIBase
     private float _lungeTimer;
     private float _lungeTime;
     private float _lungeVx;
+    private Vector2 _previousLungePosition;
+    private bool _lungeDamageDealt;
     private readonly List<Collider2D> _ignoredOwnColliders = new List<Collider2D>();
     private readonly List<Collider2D> _ignoredPlayerColliders = new List<Collider2D>();
     private bool _ignoringPlayerCollision;
@@ -170,16 +173,18 @@ public class RabbitSetup : EnemyAIBase
             return;
         }
         _lungeTimer += Time.deltaTime;
-        if (Fsm.Rb != null) Fsm.Rb.linearVelocity = new Vector2(_lungeVx * Mathf.Lerp(1f, 1f + LungeAccel, _lungeTimer / _lungeTime), Fsm.Rb.linearVelocity.y);
-        if (_lungeTimer < _lungeTime) return;
-        Fsm.StopMovement();
-        if (Vector2.Distance(transform.position, Fsm.Player.position) <= AttackRange)
+        if (Fsm.Rb != null)
         {
-            Fsm.PerformAttack(AttackRange);
-            ChangeState(State.Idle);
-            return;
+            Vector2 currentPosition = Fsm.Rb.position;
+            TryDealLungeDamage(_previousLungePosition, currentPosition);
+            _previousLungePosition = currentPosition;
+            Fsm.Rb.linearVelocity = new Vector2(_lungeVx * Mathf.Lerp(1f, 1f + LungeAccel, _lungeTimer / _lungeTime), Fsm.Rb.linearVelocity.y);
         }
-        ChangeState(State.Chase);
+        if (_lungeTimer < _lungeTime) return;
+
+        if (Fsm.Rb != null) TryDealLungeDamage(_previousLungePosition, Fsm.Rb.position);
+        Fsm.StopMovement();
+        ChangeState(_lungeDamageDealt ? State.Idle : State.Chase);
     }
 
     private void UpdateStunned()
@@ -217,6 +222,8 @@ public class RabbitSetup : EnemyAIBase
         _isLunging = true;
         _lungeTimer = 0f;
         _lungeTime = Mathf.Max(0.01f, LungeDuration);
+        _lungeDamageDealt = false;
+        _previousLungePosition = Fsm.Rb != null ? Fsm.Rb.position : (Vector2)transform.position;
         float dx = (Fsm.Player.position.x - transform.position.x) * LungeDistanceMultiplier;
         _lungeVx = dx / _lungeTime;
         if (Fsm.Rb != null)
@@ -227,6 +234,43 @@ public class RabbitSetup : EnemyAIBase
         }
         if (Fsm.Anim != null && !string.IsNullOrEmpty(AttackTrigger) && Fsm.Anim.HasParameterOfType(AttackTrigger, AnimatorControllerParameterType.Trigger)) Fsm.Anim.SetTrigger(AttackTrigger);
         else if (Fsm.Anim != null && !string.IsNullOrEmpty(AttackAnimation)) Fsm.Anim.Play(AttackAnimation);
+    }
+
+    private void TryDealLungeDamage(Vector2 start, Vector2 end)
+    {
+        if (_lungeDamageDealt || Fsm.Player == null) return;
+
+        Vector2 delta = end - start;
+        RaycastHit2D[] hits = delta.sqrMagnitude > 0.0001f
+            ? Physics2D.CircleCastAll(start, LungeHitRadius, delta.normalized, delta.magnitude)
+            : null;
+
+        if (hits != null)
+        {
+            for (int i = 0; i < hits.Length; i++)
+            {
+                if (TryDamagePlayer(hits[i].collider)) return;
+            }
+        }
+
+        Collider2D[] overlaps = Physics2D.OverlapCircleAll(end, LungeHitRadius);
+        for (int i = 0; i < overlaps.Length; i++)
+        {
+            if (TryDamagePlayer(overlaps[i])) return;
+        }
+    }
+
+    private bool TryDamagePlayer(Collider2D hit)
+    {
+        if (hit == null || Fsm.Player == null || hit.transform.root != Fsm.Player.root) return false;
+
+        IDamageable player = hit.GetComponentInParent<IDamageable>();
+        if (player == null) return false;
+
+        float damage = Fsm.Data != null ? Fsm.Data.Damage : 10f;
+        player.TakeDamage(damage, gameObject);
+        _lungeDamageDealt = true;
+        return true;
     }
 
     private void SetFacing(bool faceRight)
@@ -304,5 +348,6 @@ public class RabbitSetup : EnemyAIBase
     private void OnValidate()
     {
         AbovePlayerHorizontalDeadZone = Mathf.Max(0f, AbovePlayerHorizontalDeadZone);
+        LungeHitRadius = Mathf.Max(0.05f, LungeHitRadius);
     }
 }

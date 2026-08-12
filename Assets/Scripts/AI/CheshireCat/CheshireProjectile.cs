@@ -79,7 +79,8 @@ public class CheshireProjectile : MonoBehaviour, IDamageable
         bool requestsCloneDebuff,
         GameObject source,
         float deflectSpeedMultiplier,
-        float deflectHomingDelay)
+        float deflectHomingDelay,
+        float minimumLifetime)
     {
         Launch(initialDirection, speed, damage, source);
         _homingTarget = target;
@@ -89,6 +90,7 @@ public class CheshireProjectile : MonoBehaviour, IDamageable
         _homingPauseTimer = 0f;
         _requestsCloneDebuff = requestsCloneDebuff;
         _deflectHomingDelay = Mathf.Max(0f, deflectHomingDelay);
+        _remainingLifetime = Mathf.Max(_remainingLifetime, minimumLifetime);
         ApplyColor(color);
     }
 

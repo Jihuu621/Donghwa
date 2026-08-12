@@ -221,6 +221,7 @@ MonoBehaviour:
   LungeDistanceMultiplier: 1.6
   LungeAccel: 1.2
   LungeArcLowFactor: 0.5
+  LungeHitRadius: 0.65
   DetectRange: 10
   ChaseRange: 15
   AttackRange: 1.5

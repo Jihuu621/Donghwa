@@ -7,6 +7,8 @@ public class CheshireCatClone : MonoBehaviour, IDamageable
     private static readonly int IdleAnimationState = Animator.StringToHash("Base Layer.Cat_Idle");
     private static readonly int TeleportAnimationState = Animator.StringToHash("Base Layer.Cat_Attack1");
     private static readonly int TeleportAppearAnimationState = Animator.StringToHash("Base Layer.Cat_TeleportAppear");
+    private static readonly int PatternBFireAnimationState = Animator.StringToHash("Base Layer.Cat_PatternB");
+    private const float PatternBFireAnimationLength = 1f;
 
     private CheshireCatAI _owner;
     private Rigidbody2D _rigidbody;
@@ -30,6 +32,7 @@ public class CheshireCatClone : MonoBehaviour, IDamageable
     private bool _active;
     private bool _ending;
     private float _deactivationTimer;
+    private float _fireAnimationTimer;
 
     private void Awake()
     {
@@ -104,6 +107,12 @@ public class CheshireCatClone : MonoBehaviour, IDamageable
             PickMoveDirection();
         }
 
+        if (_fireAnimationTimer > 0f)
+        {
+            _fireAnimationTimer -= Time.deltaTime;
+            if (_fireAnimationTimer <= 0f) PlayIdleAnimation();
+        }
+
         _directionTimer -= Time.deltaTime;
         if (_directionTimer <= 0f) PickMoveDirection();
     }
@@ -167,6 +176,12 @@ public class CheshireCatClone : MonoBehaviour, IDamageable
     {
         if (_active && !_ending && _owner != null)
         {
+            _fireAnimationTimer = PatternBFireAnimationLength;
+            if (_animator != null)
+            {
+                _animator.speed = 1f;
+                _animator.Play(PatternBFireAnimationState, 0, 0f);
+            }
             _owner.FirePatternBProjectile(transform.position, true, gameObject);
         }
     }

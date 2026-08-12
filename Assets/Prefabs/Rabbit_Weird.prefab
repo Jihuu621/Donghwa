@@ -270,6 +270,7 @@ MonoBehaviour:
   pawAttackMoveSpeed: 0.8
   pawAttackHeight: 1.25
   pawAttackVerticalOffset: 0.05
+  pawAttackRearReach: 0.35
   pawDamagePerSwing: 3
   attackRecoveryTime: 0.55
   attackCooldown: 0.65

@@ -65,6 +65,8 @@ public sealed class RabbitWeirdSetup : EnemyAIBase
     [SerializeField, Min(0f)] private float pawAttackMoveSpeed = 0.8f;
     [SerializeField, Min(0.1f)] private float pawAttackHeight = 1.25f;
     [SerializeField] private float pawAttackVerticalOffset = 0.05f;
+    [Tooltip("Keeps paw hits reliable when the rabbit overlaps or passes slightly behind the player.")]
+    [SerializeField, Min(0f)] private float pawAttackRearReach = 0.35f;
     [SerializeField, Min(0f)] private float pawDamagePerSwing = 3f;
 
     [Header("Recovery")]
@@ -422,9 +424,11 @@ public sealed class RabbitWeirdSetup : EnemyAIBase
         PlayAttack(attackAnimationLength / Mathf.Max(0.02f, pawSwingInterval), 0f);
         if (Fsm.Rb == null || Fsm.Player == null) return;
 
+        float totalHorizontalReach = pawAttackRange + pawAttackRearReach;
+        float centerOffset = (pawAttackRange - pawAttackRearReach) * 0.5f;
         Vector2 center = Fsm.Rb.position +
-                         new Vector2(_facingDirection * pawAttackRange * 0.5f, pawAttackVerticalOffset);
-        Vector2 size = new Vector2(pawAttackRange, pawAttackHeight);
+                         new Vector2(_facingDirection * centerOffset, pawAttackVerticalOffset);
+        Vector2 size = new Vector2(totalHorizontalReach, pawAttackHeight);
         Collider2D[] hits = Physics2D.OverlapBoxAll(center, size, 0f);
         if (TryFindPlayerDamageable(hits, out IDamageable player))
         {
@@ -705,6 +709,7 @@ public sealed class RabbitWeirdSetup : EnemyAIBase
         pawSwingInterval = Mathf.Max(0.02f, pawSwingInterval);
         pawAttackMoveSpeed = Mathf.Max(0f, pawAttackMoveSpeed);
         pawAttackHeight = Mathf.Max(0.1f, pawAttackHeight);
+        pawAttackRearReach = Mathf.Max(0f, pawAttackRearReach);
         pawDamagePerSwing = Mathf.Max(0f, pawDamagePerSwing);
         attackRecoveryTime = Mathf.Max(0f, attackRecoveryTime);
         attackCooldown = Mathf.Max(0f, attackCooldown);

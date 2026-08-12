@@ -14,6 +14,7 @@ public class CheshireCatAI : EnemyAIBase
     private static readonly int ScratchDashAnimationState = Animator.StringToHash("Base Layer.Cat_Yakzin");
     private static readonly int PatternCChargeAnimationState = Animator.StringToHash("Base Layer.Cat_Gangzin");
     private static readonly int PatternBFireAnimationState = Animator.StringToHash("Base Layer.Cat_PatternB");
+    private static readonly int LaughingAnimationState = Animator.StringToHash("Base Layer.Cat_Laughing");
     private const float ScratchDashAnimationLength = 0.4166667f;
     private const float PatternBFireAnimationLength = 1f;
 
@@ -23,13 +24,12 @@ public class CheshireCatAI : EnemyAIBase
         PatternBSmokeEnter, PatternBSetup, PatternBSmokeAppear, PatternBActive, PatternBExit,
         PatternCSmokeEnter, PatternCTeleport, PatternCSmokeAppear, PatternCCharge, PatternCImpactPause,
         PatternCScratchWindup, PatternCScratchDash,
-        PatternDSmokeEnter, PatternDActive, PatternDSmokeAppear,
+        PatternDSmokeEnter, PatternDActive, PatternDSmokeAppear, PatternDLaugh,
         Recovery, Stunned, Groggy
     }
 
     public enum FallingObjectKind
     {
-        Hazard,
         Target,
         Fake
     }
@@ -102,6 +102,20 @@ public class CheshireCatAI : EnemyAIBase
     [SerializeField] private Color patternBMainProjectileColor = new Color(1f, 0.2f, 0.65f, 1f);
     [SerializeField] private Color patternBCloneProjectileColor = new Color(0.2f, 0.9f, 1f, 1f);
 
+    [Header("Reaction")]
+    [SerializeField, Min(0.1f)] private float laughingAnimationDuration = 0.6f;
+
+    [Header("Audio")]
+    [SerializeField] private AudioClip bossMusicClip;
+    [SerializeField] private AudioClip dashSoundClip;
+    [SerializeField] private AudioClip projectileSpawnSoundClip;
+    [SerializeField] private AudioClip patternDStartSoundClip;
+    [SerializeField] private AudioClip dashImpactSoundClip1;
+    [SerializeField] private AudioClip dashImpactSoundClip2;
+    [SerializeField] private AudioClip dashImpactSoundClip3;
+    [SerializeField, Range(0f, 1f)] private float musicVolume = 0.45f;
+    [SerializeField, Range(0f, 1f)] private float soundEffectVolume = 0.8f;
+
     [Header("Pattern B Clone Debuff")]
     [SerializeField] private StatusKeyword patternBCloneDebuff = StatusKeyword.None;
     [SerializeField, Min(0.1f)] private float patternBCloneDebuffDuration = 2f;
@@ -138,14 +152,13 @@ public class CheshireCatAI : EnemyAIBase
     [Header("Pattern D - Scissor Rain")]
     [SerializeField] private CheshireProjectile patternDFallingObjectPrefab;
     [SerializeField, Min(1f)] private float patternDDuration = 14f;
-    [SerializeField, Min(0.05f)] private float patternDHazardSpawnInterval = 0.38f;
+    [FormerlySerializedAs("patternDHazardSpawnInterval")]
+    [SerializeField, Min(0.05f)] private float patternDFakeSpawnInterval = 0.38f;
     [SerializeField, Min(0.05f)] private float patternDSpecialSpawnInterval = 0.7f;
     [SerializeField, Min(1)] private int patternDTargetAppearanceMin = 5;
     [SerializeField, Min(1)] private int patternDTargetAppearanceMax = 7;
-    [SerializeField, Min(1)] private int patternDFakeAppearanceMin = 5;
-    [SerializeField, Min(1)] private int patternDFakeAppearanceMax = 7;
     [SerializeField, Min(1)] private int patternDRequiredTargetCuts = 3;
-    [SerializeField, Min(1)] private int patternDFakeCutsToFail = 2;
+    [SerializeField, Min(1)] private int patternDFakeCutsToFail = 3;
     [SerializeField, Min(0f)] private float patternDFallingObjectDamage = 10f;
     [SerializeField, Min(0f)] private float patternDFakeCutDamage = 20f;
     [SerializeField, Min(0f)] private float patternDSpawnHeightOffset = 4f;
@@ -157,7 +170,6 @@ public class CheshireCatAI : EnemyAIBase
     [SerializeField, Min(0f)] private float patternDAngularSpeed = 120f;
     [SerializeField, Min(0.1f)] private float patternDObjectScale = 1f;
     [SerializeField, Min(0)] private int patternDCutParticleBurstCount = 10;
-    [SerializeField] private Color patternDHazardParticleColor = new Color(0.68f, 0.72f, 0.78f, 0.72f);
     [FormerlySerializedAs("patternDTargetAuraColor")]
     [SerializeField] private Color patternDTargetParticleColor = new Color(1f, 0.05f, 0.32f, 1f);
     [FormerlySerializedAs("patternDFakeAuraColor")]
@@ -210,6 +222,9 @@ public class CheshireCatAI : EnemyAIBase
     private float _patternBShotTimer;
     private float _patternBPostShotTimer;
     private float _patternBFireAnimationTimer;
+    private float _laughingAnimationTimer;
+    private AudioSource _musicAudioSource;
+    private AudioSource _soundEffectAudioSource;
     private Vector2 _hoverAnchor;
     private Vector2 _hoverTargetPosition;
     private float _hoverDirectionTimer;
@@ -226,12 +241,10 @@ public class CheshireCatAI : EnemyAIBase
     private CheshireShockwaveVisual _shockwaveVisual;
     private EffectManager _playerStatusEffects;
     private float _patternDElapsed;
-    private float _patternDHazardSpawnTimer;
+    private float _patternDFakeSpawnTimer;
     private float _patternDSpecialSpawnTimer;
     private int _patternDTargetAppearanceCount;
-    private int _patternDFakeAppearanceCount;
     private int _patternDTargetsSpawned;
-    private int _patternDFakesSpawned;
     private int _patternDTargetCuts;
     private int _patternDFakeCuts;
 
@@ -262,6 +275,7 @@ public class CheshireCatAI : EnemyAIBase
             }
         }
         SetupAfterimage();
+        SetupAudio();
         PrewarmPatternBClones();
         PrewarmShockwaveVisual();
         PrewarmPatternDObjects();
@@ -297,6 +311,7 @@ public class CheshireCatAI : EnemyAIBase
             case State.PatternDSmokeEnter: UpdatePatternDSmokeEnter(); break;
             case State.PatternDActive: UpdatePatternDActive(); break;
             case State.PatternDSmokeAppear: UpdatePatternDSmokeAppear(); break;
+            case State.PatternDLaugh: UpdatePatternDLaugh(); break;
             case State.Recovery: UpdateRecovery(); break;
             case State.Stunned: UpdateStunned(); break;
             case State.Groggy: UpdateGroggy(); break;
@@ -383,6 +398,7 @@ public class CheshireCatAI : EnemyAIBase
                 SetSmokeForm(false);
                 PlayPatternCChargeAnimation();
                 BeginPatternCCharge();
+                PlaySoundEffect(dashSoundClip);
                 break;
             case State.PatternCImpactPause:
                 SetSmokeForm(false);
@@ -392,6 +408,7 @@ public class CheshireCatAI : EnemyAIBase
             case State.PatternCScratchDash:
                 SetSmokeForm(false);
                 PlayScratchDashAnimation();
+                PlaySoundEffect(dashSoundClip);
                 break;
             case State.PatternCScratchWindup:
                 SetSmokeForm(false);
@@ -409,6 +426,12 @@ public class CheshireCatAI : EnemyAIBase
                 SetSmokeForm(true);
                 Fsm.StopAllMovement();
                 PlaySmokeAnimation(TeleportAppearAnimationState);
+                break;
+            case State.PatternDLaugh:
+                SetPatternDBodyHidden(false);
+                SetSmokeForm(false);
+                Fsm.StopAllMovement();
+                PlayLaughingAnimation();
                 break;
             case State.RangedAttack:
             case State.ScratchWindup:
@@ -587,7 +610,13 @@ public class CheshireCatAI : EnemyAIBase
     {
         UpdatePatternBMovement();
 
-        if (_patternBFireAnimationTimer > 0f)
+        if (_laughingAnimationTimer > 0f)
+        {
+            _laughingAnimationTimer -= Time.deltaTime;
+            if (_laughingAnimationTimer <= 0f) PlayIdleAnimation();
+        }
+
+        if (_patternBFireAnimationTimer > 0f && _laughingAnimationTimer <= 0f)
         {
             _patternBFireAnimationTimer -= Time.deltaTime;
             if (_patternBFireAnimationTimer <= 0f) PlayIdleAnimation();
@@ -693,14 +722,14 @@ public class CheshireCatAI : EnemyAIBase
         {
             Vector2 impactPosition = impact.point - _patternCChargeDirection * patternCImpactCastRadius;
             SetPosition(impactPosition);
-            TriggerPatternCImpact(impact.point);
+            TriggerPatternCImpact(impact.point, true);
             return;
         }
 
         Fsm.Rb.linearVelocity = _patternCChargeDirection * patternCChargeSpeed;
         if (_stateTimer >= patternCChargeMaxDuration)
         {
-            TriggerPatternCImpact(Fsm.Rb.position);
+            TriggerPatternCImpact(Fsm.Rb.position, false);
         }
     }
 
@@ -765,11 +794,12 @@ public class CheshireCatAI : EnemyAIBase
         _patternCDirectHitDealt = true;
     }
 
-    private void TriggerPatternCImpact(Vector2 impactPosition)
+    private void TriggerPatternCImpact(Vector2 impactPosition, bool hitSurface)
     {
         if (CurrentState != State.PatternCCharge) return;
 
         Fsm.StopAllMovement();
+        if (hitSurface) PlayRandomDashImpactSound();
         if (_shockwaveVisual == null) PrewarmShockwaveVisual();
         _shockwaveVisual.Play(
             impactPosition,
@@ -891,6 +921,7 @@ public class CheshireCatAI : EnemyAIBase
 
     private void BeginPatternD()
     {
+        PlaySoundEffect(patternDStartSoundClip);
         ChangeState(State.PatternDSmokeEnter);
     }
 
@@ -903,16 +934,12 @@ public class CheshireCatAI : EnemyAIBase
     private void BeginPatternDActive()
     {
         _patternDElapsed = 0f;
-        _patternDHazardSpawnTimer = 0.15f;
+        _patternDFakeSpawnTimer = 0.15f;
         _patternDSpecialSpawnTimer = 0.45f;
         _patternDTargetAppearanceCount = Random.Range(
             patternDTargetAppearanceMin,
             patternDTargetAppearanceMax + 1);
-        _patternDFakeAppearanceCount = Random.Range(
-            patternDFakeAppearanceMin,
-            patternDFakeAppearanceMax + 1);
         _patternDTargetsSpawned = 0;
-        _patternDFakesSpawned = 0;
         _patternDTargetCuts = 0;
         _patternDFakeCuts = 0;
     }
@@ -920,13 +947,13 @@ public class CheshireCatAI : EnemyAIBase
     private void UpdatePatternDActive()
     {
         _patternDElapsed += Time.deltaTime;
-        _patternDHazardSpawnTimer -= Time.deltaTime;
+        _patternDFakeSpawnTimer -= Time.deltaTime;
         _patternDSpecialSpawnTimer -= Time.deltaTime;
 
-        if (_patternDHazardSpawnTimer <= 0f)
+        if (_patternDFakeSpawnTimer <= 0f)
         {
-            SpawnPatternDObject(FallingObjectKind.Hazard);
-            _patternDHazardSpawnTimer = patternDHazardSpawnInterval;
+            SpawnPatternDObject(FallingObjectKind.Fake);
+            _patternDFakeSpawnTimer = patternDFakeSpawnInterval;
         }
 
         if (_patternDSpecialSpawnTimer <= 0f && HasUnspawnedPatternDSpecials())
@@ -948,33 +975,38 @@ public class CheshireCatAI : EnemyAIBase
         _stateTimer += Time.deltaTime;
         if (_stateTimer < smokeDuration) return;
 
-        PlayIdleAnimation();
         SetPatternDBodyHidden(false);
         SetSmokeForm(false);
+        if (_patternDFakeCuts >= patternDFakeCutsToFail)
+        {
+            ChangeState(State.PatternDLaugh);
+            return;
+        }
+
+        PlayIdleAnimation();
+        ChangeState(State.Recovery);
+    }
+
+    private void UpdatePatternDLaugh()
+    {
+        _stateTimer += Time.deltaTime;
+        if (_stateTimer < laughingAnimationDuration) return;
+
+        _laughingAnimationTimer = 0f;
+        PlayIdleAnimation();
         ChangeState(State.Recovery);
     }
 
     private bool HasUnspawnedPatternDSpecials()
     {
-        return _patternDTargetsSpawned < _patternDTargetAppearanceCount ||
-               _patternDFakesSpawned < _patternDFakeAppearanceCount;
+        return _patternDTargetsSpawned < _patternDTargetAppearanceCount;
     }
 
     private void SpawnNextPatternDSpecial()
     {
-        bool canSpawnTarget = _patternDTargetsSpawned < _patternDTargetAppearanceCount;
-        bool canSpawnFake = _patternDFakesSpawned < _patternDFakeAppearanceCount;
-        bool spawnTarget = canSpawnTarget && (!canSpawnFake || Random.value < 0.5f);
-
-        if (spawnTarget)
-        {
-            _patternDTargetsSpawned++;
-            SpawnPatternDObject(FallingObjectKind.Target);
-            return;
-        }
-
-        _patternDFakesSpawned++;
-        SpawnPatternDObject(FallingObjectKind.Fake);
+        if (_patternDTargetsSpawned >= _patternDTargetAppearanceCount) return;
+        _patternDTargetsSpawned++;
+        SpawnPatternDObject(FallingObjectKind.Target);
     }
 
     private bool HasActivePatternDSpecial()
@@ -982,7 +1014,7 @@ public class CheshireCatAI : EnemyAIBase
         for (int i = 0; i < _activePatternDObjects.Count; i++)
         {
             CheshireFallingObject fallingObject = _activePatternDObjects[i];
-            if (fallingObject != null && fallingObject.Kind != FallingObjectKind.Hazard) return true;
+            if (fallingObject != null && fallingObject.Kind == FallingObjectKind.Target) return true;
         }
 
         return false;
@@ -1001,15 +1033,9 @@ public class CheshireCatAI : EnemyAIBase
             -Random.Range(patternDFallSpeedMin, patternDFallSpeedMax));
         float angularVelocity = Random.Range(-patternDAngularSpeed, patternDAngularSpeed);
         float despawnY = _fixedTeleportAreaCenter.y - halfSize.y - patternDDespawnPadding;
-        Color particleColor = patternDHazardParticleColor;
-        if (kind == FallingObjectKind.Target)
-        {
-            particleColor = patternDTargetParticleColor;
-        }
-        else if (kind == FallingObjectKind.Fake)
-        {
-            particleColor = patternDFakeParticleColor;
-        }
+        Color particleColor = kind == FallingObjectKind.Target
+            ? patternDTargetParticleColor
+            : patternDFakeParticleColor;
 
         fallingObject.gameObject.SetActive(true);
         fallingObject.Configure(
@@ -1262,6 +1288,7 @@ public class CheshireCatAI : EnemyAIBase
 
     private void FirePatternBVolley()
     {
+        PlaySoundEffect(projectileSpawnSoundClip);
         PlayPatternBFireAnimation();
         FirePatternBProjectile(transform.position, false, gameObject);
 
@@ -1274,6 +1301,7 @@ public class CheshireCatAI : EnemyAIBase
     private void FireRandomRangedAttack()
     {
         if (projectilePrefab == null || Fsm.Player == null) return;
+        PlaySoundEffect(projectileSpawnSoundClip);
         Vector2 origin = projectileSpawnPoint != null ? projectileSpawnPoint.position : transform.position;
         Vector2 targetSnapshot = Fsm.Player.position;
         Vector2 baseDirection = (targetSnapshot - origin).normalized;
@@ -1613,6 +1641,12 @@ public class CheshireCatAI : EnemyAIBase
         _clones.Remove(clone);
     }
 
+    public void NotifyCloneHit(CheshireCatClone clone)
+    {
+        if (CurrentState != State.PatternBActive || clone == null || !_clones.Contains(clone)) return;
+        PlayLaughingAnimation();
+    }
+
     public void NotifyCloneDestroyed(CheshireCatClone clone)
     {
         _clones.Remove(clone);
@@ -1646,6 +1680,41 @@ public class CheshireCatAI : EnemyAIBase
 
         _afterimageTrail.Configure(afterimageInterval, afterimageLifetime, afterimageMinimumDistance, afterimageColor);
         _afterimageTrail.SetEmitting(true);
+    }
+
+    private void SetupAudio()
+    {
+        _musicAudioSource = gameObject.AddComponent<AudioSource>();
+        _musicAudioSource.playOnAwake = false;
+        _musicAudioSource.loop = true;
+        _musicAudioSource.spatialBlend = 0f;
+        _musicAudioSource.volume = musicVolume;
+        _musicAudioSource.clip = bossMusicClip;
+
+        _soundEffectAudioSource = gameObject.AddComponent<AudioSource>();
+        _soundEffectAudioSource.playOnAwake = false;
+        _soundEffectAudioSource.loop = false;
+        _soundEffectAudioSource.spatialBlend = 0f;
+        _soundEffectAudioSource.volume = soundEffectVolume;
+
+        if (bossMusicClip != null) _musicAudioSource.Play();
+    }
+
+    private void PlaySoundEffect(AudioClip clip)
+    {
+        if (clip == null || _soundEffectAudioSource == null) return;
+        _soundEffectAudioSource.PlayOneShot(clip);
+    }
+
+    private void PlayRandomDashImpactSound()
+    {
+        AudioClip clip = Random.Range(0, 3) switch
+        {
+            0 => dashImpactSoundClip1,
+            1 => dashImpactSoundClip2,
+            _ => dashImpactSoundClip3
+        };
+        PlaySoundEffect(clip);
     }
 
     private void PrewarmShockwaveVisual()
@@ -1834,7 +1903,7 @@ public class CheshireCatAI : EnemyAIBase
 
         if (IsPatternCImpactSurface(other))
         {
-            TriggerPatternCImpact(other.ClosestPoint(transform.position));
+            TriggerPatternCImpact(other.ClosestPoint(transform.position), true);
         }
     }
 
@@ -1911,6 +1980,14 @@ public class CheshireCatAI : EnemyAIBase
         if (Fsm.Anim == null) return;
         Fsm.Anim.speed = 1f;
         Fsm.Anim.Play(PatternBFireAnimationState, 0, 0f);
+    }
+
+    private void PlayLaughingAnimation()
+    {
+        _laughingAnimationTimer = laughingAnimationDuration;
+        if (Fsm.Anim == null) return;
+        Fsm.Anim.speed = 0.6f / Mathf.Max(laughingAnimationDuration, 0.01f);
+        Fsm.Anim.Play(LaughingAnimationState, 0, 0f);
     }
 
     private static Vector2 Rotate(Vector2 direction, float degrees)
@@ -2012,6 +2089,9 @@ public class CheshireCatAI : EnemyAIBase
         patternBCloneHealth = Mathf.Max(0.1f, patternBCloneHealth);
         patternBCloneDebuffDuration = Mathf.Max(0.1f, patternBCloneDebuffDuration);
         patternBCloneDebuffValue = Mathf.Max(0f, patternBCloneDebuffValue);
+        laughingAnimationDuration = Mathf.Max(0.1f, laughingAnimationDuration);
+        musicVolume = Mathf.Clamp01(musicVolume);
+        soundEffectVolume = Mathf.Clamp01(soundEffectVolume);
         patternBProjectileScaleMultiplier = Mathf.Max(0.1f, patternBProjectileScaleMultiplier);
         patternCPlayerTeleportMinimumDistance = Mathf.Max(0f, patternCPlayerTeleportMinimumDistance);
         patternCRepeatMin = Mathf.Max(1, patternCRepeatMin);
@@ -2036,12 +2116,10 @@ public class CheshireCatAI : EnemyAIBase
         patternCCounterReboundLift = Mathf.Max(0f, patternCCounterReboundLift);
         patternCShockwaveVisualDuration = Mathf.Max(0.05f, patternCShockwaveVisualDuration);
         patternDDuration = Mathf.Max(1f, patternDDuration);
-        patternDHazardSpawnInterval = Mathf.Max(0.05f, patternDHazardSpawnInterval);
+        patternDFakeSpawnInterval = Mathf.Max(0.05f, patternDFakeSpawnInterval);
         patternDSpecialSpawnInterval = Mathf.Max(0.05f, patternDSpecialSpawnInterval);
         patternDTargetAppearanceMin = Mathf.Max(1, patternDTargetAppearanceMin);
         patternDTargetAppearanceMax = Mathf.Max(patternDTargetAppearanceMin, patternDTargetAppearanceMax);
-        patternDFakeAppearanceMin = Mathf.Max(1, patternDFakeAppearanceMin);
-        patternDFakeAppearanceMax = Mathf.Max(patternDFakeAppearanceMin, patternDFakeAppearanceMax);
         patternDRequiredTargetCuts = Mathf.Max(1, patternDRequiredTargetCuts);
         patternDFakeCutsToFail = Mathf.Max(1, patternDFakeCutsToFail);
         patternDFallingObjectDamage = Mathf.Max(0f, patternDFallingObjectDamage);

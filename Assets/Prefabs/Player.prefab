@@ -477,6 +477,9 @@ MonoBehaviour:
   great: {fileID: 3242472012253670762}
   good: {fileID: 982277880931531044}
   bad: {fileID: 7175294331119647783}
+  guardSuccessSound: {fileID: 8300000, guid: 40367e69e05b423c9c4fbcdf75f1822e, type: 3}
+  guardFailedSound: {fileID: 8300000, guid: 97b415350f374b77bc7f9d911f18e2cf, type: 3}
+  guardSoundVolume: 0.8
 --- !u!114 &1455634622923983538
 MonoBehaviour:
   m_ObjectHideFlags: 0

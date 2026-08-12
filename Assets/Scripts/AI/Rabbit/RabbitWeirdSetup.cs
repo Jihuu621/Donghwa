@@ -48,6 +48,8 @@ public sealed class RabbitWeirdSetup : EnemyAIBase
     [SerializeField, Range(1, 10)] private int bodySlamCount = 3;
     [SerializeField, Min(0.1f)] private float bodySlamTargetTime = 0.45f;
     [SerializeField, Min(1f)] private float bodySlamOvershoot = 1.25f;
+    [Tooltip("Each slam travels at least this far, even when the player is very close.")]
+    [SerializeField, Min(0.1f)] private float bodySlamMinimumDistance = 3.25f;
     [SerializeField, Min(0.1f)] private float bodySlamMaximumHorizontalSpeed = 13f;
     [SerializeField] private Vector2 bodySlamVerticalVelocityRange = new Vector2(4f, 12f);
     [SerializeField, Min(0.1f)] private float bodySlamMaximumDuration = 1.4f;
@@ -303,11 +305,23 @@ public sealed class RabbitWeirdSetup : EnemyAIBase
         Vector2 origin = Fsm.Rb.position;
         Vector2 lockedTarget = Fsm.Player.position;
         float targetTime = Mathf.Max(0.1f, bodySlamTargetTime);
-        float deltaX = (lockedTarget.x - origin.x) * bodySlamOvershoot;
-        if (Mathf.Abs(deltaX) < 0.35f) deltaX = _facingDirection * 0.35f;
+        float targetDeltaX = lockedTarget.x - origin.x;
+        float slamDirection = Mathf.Abs(targetDeltaX) > horizontalDeadZone
+            ? Mathf.Sign(targetDeltaX)
+            : _facingDirection;
+        float travelDistance = Mathf.Max(
+            Mathf.Abs(targetDeltaX) * bodySlamOvershoot,
+            bodySlamMinimumDistance);
+        float deltaX = slamDirection * travelDistance;
 
-        float horizontalVelocity = Mathf.Clamp(deltaX / targetTime,
-            -bodySlamMaximumHorizontalSpeed, bodySlamMaximumHorizontalSpeed);
+        // The minimum travel distance takes priority over the optional speed cap.
+        float effectiveMaximumSpeed = Mathf.Max(
+            bodySlamMaximumHorizontalSpeed,
+            bodySlamMinimumDistance / targetTime);
+        float horizontalVelocity = Mathf.Clamp(
+            deltaX / targetTime,
+            -effectiveMaximumSpeed,
+            effectiveMaximumSpeed);
         float gravity = Physics2D.gravity.y * Fsm.Rb.gravityScale;
         float verticalVelocity = (lockedTarget.y - origin.y - 0.5f * gravity * targetTime * targetTime) /
                                  targetTime;
@@ -664,6 +678,7 @@ public sealed class RabbitWeirdSetup : EnemyAIBase
         bodySlamCount = Mathf.Max(1, bodySlamCount);
         bodySlamTargetTime = Mathf.Max(0.1f, bodySlamTargetTime);
         bodySlamOvershoot = Mathf.Max(1f, bodySlamOvershoot);
+        bodySlamMinimumDistance = Mathf.Max(0.1f, bodySlamMinimumDistance);
         bodySlamMaximumHorizontalSpeed = Mathf.Max(0.1f, bodySlamMaximumHorizontalSpeed);
         bodySlamVerticalVelocityRange.x = Mathf.Max(0f, bodySlamVerticalVelocityRange.x);
         bodySlamVerticalVelocityRange.y = Mathf.Max(bodySlamVerticalVelocityRange.x,

@@ -7312,7 +7312,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3374976332121162450, guid: cbfc6dd05035c3340be39935c9745427, type: 3}
       propertyPath: m_Name
-      value: Rabbit
+      value: Rabbit2
       objectReference: {fileID: 0}
     - target: {fileID: 5824395166889260387, guid: cbfc6dd05035c3340be39935c9745427, type: 3}
       propertyPath: m_IsTrigger
@@ -7320,11 +7320,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8243068615077074166, guid: cbfc6dd05035c3340be39935c9745427, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -83.08
+      value: -83.15
       objectReference: {fileID: 0}
     - target: {fileID: 8243068615077074166, guid: cbfc6dd05035c3340be39935c9745427, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -5.709999
+      value: -5.86
       objectReference: {fileID: 0}
     - target: {fileID: 8243068615077074166, guid: cbfc6dd05035c3340be39935c9745427, type: 3}
       propertyPath: m_LocalPosition.z

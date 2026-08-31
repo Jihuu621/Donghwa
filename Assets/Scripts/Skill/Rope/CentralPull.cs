@@ -533,35 +533,16 @@ public class CentralPull : MonoBehaviour
         Collider2D enemyCol = target.GetComponent<Collider2D>();
         if (enemyCol != null && !enemyCol.enabled) return;
 
-        CrushEnemy(target);
+        RemoveEnemy(target);
     }
 
-    private void CrushEnemy(GameObject target)
+    private static void RemoveEnemy(GameObject target)
     {
-        Collider2D enemyCol = target.GetComponent<Collider2D>();
-        if (enemyCol != null) enemyCol.enabled = false;
+        if (target == null || !target.activeSelf) return;
 
-        Rigidbody2D targetRb = target.GetComponent<Rigidbody2D>();
-        if (targetRb != null)
-        {
-            targetRb.linearVelocity = Vector2.zero;
-            targetRb.bodyType = RigidbodyType2D.Static;
-        }
-
-        Vector3 scale = target.transform.localScale;
-        Vector2 direction = rb.linearVelocity.normalized;
-
-        if (Mathf.Abs(direction.x) > Mathf.Abs(direction.y))
-            target.transform.localScale = new Vector3(scale.x * 0.2f, scale.y * 1.5f, scale.z);
-        else
-            target.transform.localScale = new Vector3(scale.x * 1.5f, scale.y * 0.2f, scale.z);
-
-        if (collisionEffectPrefab != null)
-        {
-            Instantiate(collisionEffectPrefab, target.transform.position, Quaternion.identity);
-        }
-
-        Destroy(target, 0.5f);
+        // Destroy는 프레임 끝에 실행되므로 먼저 비활성화해 충돌 순간 화면에서 즉시 없앤다.
+        target.SetActive(false);
+        Destroy(target);
     }
 
     private void DestroyPullLine()

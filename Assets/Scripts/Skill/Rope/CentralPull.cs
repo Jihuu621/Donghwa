@@ -525,6 +525,17 @@ public class CentralPull : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
+        TryRemoveSandwichedEnemy(collision);
+    }
+
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        // 양쪽 접촉이 서로 다른 물리 프레임에 시작될 수 있으므로 계속 확인한다.
+        TryRemoveSandwichedEnemy(collision);
+    }
+
+    private void TryRemoveSandwichedEnemy(Collision2D collision)
+    {
         if (!isInitialized || isStopped || collision.gameObject == null) return;
 
         GameObject target = collision.gameObject;
@@ -533,7 +544,41 @@ public class CentralPull : MonoBehaviour
         Collider2D enemyCol = target.GetComponent<Collider2D>();
         if (enemyCol != null && !enemyCol.enabled) return;
 
+        // 한쪽 블록에 스친 것만으로는 제거하지 않는다.
+        // 같은 토끼가 양쪽 블록 콜라이더에 모두 닿아 실제로 끼인 경우에만 제거한다.
+        if (!IsEnemySandwiched(target)) return;
+
         RemoveEnemy(target);
+    }
+
+    private bool IsEnemySandwiched(GameObject enemy)
+    {
+        if (partnerPull == null) return false;
+
+        Collider2D[] enemyColliders = GetPhysicalColliders(enemy);
+        return IsTouchingAny(enemyColliders, ownColliders) &&
+               IsTouchingAny(enemyColliders, partnerPull.ownColliders);
+    }
+
+    private static bool IsTouchingAny(Collider2D[] first, Collider2D[] second)
+    {
+        if (first == null || second == null) return false;
+
+        foreach (Collider2D firstCollider in first)
+        {
+            if (firstCollider == null || !firstCollider.enabled) continue;
+
+            foreach (Collider2D secondCollider in second)
+            {
+                if (secondCollider != null && secondCollider.enabled &&
+                    firstCollider.IsTouching(secondCollider))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static void RemoveEnemy(GameObject target)

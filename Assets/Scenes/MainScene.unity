@@ -452,6 +452,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuController
   gameplaySceneName: Puz
+  loadingSceneName: Loading
   gameStartButton: {fileID: 2000000014}
   settingsButton: {fileID: 2000000024}
   gameExitButton: {fileID: 2000000034}

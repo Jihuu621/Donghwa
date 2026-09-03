@@ -13,6 +13,8 @@ public sealed class MainMenuController : MonoBehaviour
     [Header("Scene")]
     [Tooltip("The scene loaded when Game Start is pressed. It must be in Build Settings.")]
     [SerializeField] private string gameplaySceneName = "All-In-One";
+    [Tooltip("The short, cosmetic loading scene shown before the gameplay scene.")]
+    [SerializeField] private string loadingSceneName = "Loading";
 
     [Header("Actions")]
     [SerializeField] private Button gameStartButton;
@@ -78,7 +80,14 @@ public sealed class MainMenuController : MonoBehaviour
             return;
         }
 
-        SceneManager.LoadScene(gameplaySceneName);
+        if (!Application.CanStreamedLevelBeLoaded(loadingSceneName))
+        {
+            Debug.LogError($"[MainMenu] '{loadingSceneName}' is not included in Build Settings.", this);
+            return;
+        }
+
+        LoadingSceneController.SetNextScene(gameplaySceneName);
+        SceneManager.LoadScene(loadingSceneName);
     }
 
     public void OpenSettings()

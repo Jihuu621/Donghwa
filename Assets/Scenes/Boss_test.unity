@@ -285,14 +285,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 900100000000000005, guid: 55faf900f5ba6de489040abbc304e38a, type: 3}
-      propertyPath: targetHealth
-      value:
-      objectReference: {fileID: 424242424}
     - target: {fileID: 671451014604402257, guid: 55faf900f5ba6de489040abbc304e38a, type: 3}
       propertyPath: m_Name
       value: UI_Canvas
       objectReference: {fileID: 0}
+    - target: {fileID: 900100000000000005, guid: 55faf900f5ba6de489040abbc304e38a, type: 3}
+      propertyPath: targetHealth
+      value: 
+      objectReference: {fileID: 424242424}
     - target: {fileID: 2145048047851006675, guid: 55faf900f5ba6de489040abbc304e38a, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -426,11 +426,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 55faf900f5ba6de489040abbc304e38a, type: 3}
---- !u!114 &424242424 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1932847501932847506, guid: 30ff9f398fdf4195ab76cb6bf1cf4a89, type: 3}
-  m_PrefabInstance: {fileID: 1180480263}
-  m_PrefabAsset: {fileID: 0}
 --- !u!61 &261311969 stripped
 BoxCollider2D:
   m_CorrespondingSourceObject: {fileID: 5334133533804395451, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
@@ -5549,6 +5544,17 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
     vectorLabel1_3: W
+--- !u!114 &424242424 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1932847501932847506, guid: 30ff9f398fdf4195ab76cb6bf1cf4a89, type: 3}
+  m_PrefabInstance: {fileID: 1180480263}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d48b3edbb43f36e42b58656300bb6872, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CheshireCatHealth
 --- !u!1 &478823670
 GameObject:
   m_ObjectHideFlags: 0
@@ -6717,7 +6723,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1932847501932847506, guid: 30ff9f398fdf4195ab76cb6bf1cf4a89, type: 3}
       propertyPath: maxHP
-      value: 30
+      value: 60
       objectReference: {fileID: 0}
     - target: {fileID: 1932847501932847509, guid: 30ff9f398fdf4195ab76cb6bf1cf4a89, type: 3}
       propertyPath: diagonalAngle

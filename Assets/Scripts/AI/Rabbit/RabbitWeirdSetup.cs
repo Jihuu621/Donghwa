@@ -200,7 +200,6 @@ public sealed class RabbitWeirdSetup : EnemyAIBase
             case State.Stunned:
                 StopAllMovement();
                 PlayIdle();
-                if (Fsm.Sr != null) Fsm.Sr.color = Color.cyan;
                 break;
         }
     }

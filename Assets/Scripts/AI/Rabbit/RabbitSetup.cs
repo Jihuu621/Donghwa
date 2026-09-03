@@ -93,29 +93,24 @@ public class RabbitSetup : EnemyAIBase
         {
             case State.Idle:
                 Fsm.StopMovement();
-                if (Fsm.Sr != null) Fsm.Sr.color = Color.white;
                 _idleDuration = Random.Range(1f, 4f);
                 break;
             case State.Patrol:
-                if (Fsm.Sr != null) Fsm.Sr.color = Color.yellow;
                 _patrolDuration = Random.Range(PatrolMoveTimeMin, PatrolMoveTimeMax);
                 _direction = Random.value < 0.5f ? -1 : 1;
                 _hopTimer = 0f;
                 SetFacing(_direction > 0);
                 break;
             case State.Chase:
-                if (Fsm.Sr != null) Fsm.Sr.color = Color.red;
                 _hopTimer = 0f;
                 break;
             case State.Lunge:
-                if (Fsm.Sr != null) Fsm.Sr.color = Color.magenta;
                 Fsm.StopMovement();
                 _isLunging = false;
                 _hopTimer = 0f;
                 break;
             case State.Stunned:
                 Fsm.StopMovement();
-                if (Fsm.Sr != null) Fsm.Sr.color = Color.blue;
                 break;
         }
     }

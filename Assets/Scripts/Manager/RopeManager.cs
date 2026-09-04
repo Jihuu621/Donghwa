@@ -43,6 +43,15 @@ public class RopeManager : MonoBehaviour
                 return;
             }
 
+            // A floating endpoint becomes a normal static rope anchor the first time
+            // it is selected. The same click then remains part of the regular
+            // two-endpoint rope-selection flow.
+            FloatingRopeAnchor floatingAnchor = selected.GetComponent<FloatingRopeAnchor>();
+            if (floatingAnchor != null)
+            {
+                floatingAnchor.LockInPlace();
+            }
+
             if (firstSelected == null)
             {
                 firstSelected = selected;

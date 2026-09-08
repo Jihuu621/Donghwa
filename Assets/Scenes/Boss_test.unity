@@ -293,6 +293,25 @@ PrefabInstance:
       propertyPath: targetHealth
       value: 
       objectReference: {fileID: 424242424}
+<<<<<<< Updated upstream
+=======
+    - target: {fileID: 900100000000000034, guid: 55faf900f5ba6de489040abbc304e38a, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4294306047
+      objectReference: {fileID: 0}
+    - target: {fileID: 900100000000000034, guid: 55faf900f5ba6de489040abbc304e38a, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 900100000000000044, guid: 55faf900f5ba6de489040abbc304e38a, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4294439167
+      objectReference: {fileID: 0}
+    - target: {fileID: 900100000000000044, guid: 55faf900f5ba6de489040abbc304e38a, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+>>>>>>> Stashed changes
     - target: {fileID: 2145048047851006675, guid: 55faf900f5ba6de489040abbc304e38a, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -6724,6 +6743,10 @@ PrefabInstance:
     - target: {fileID: 1932847501932847506, guid: 30ff9f398fdf4195ab76cb6bf1cf4a89, type: 3}
       propertyPath: maxHP
       value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 1932847501932847509, guid: 30ff9f398fdf4195ab76cb6bf1cf4a89, type: 3}
+      propertyPath: debugPattern
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 1932847501932847509, guid: 30ff9f398fdf4195ab76cb6bf1cf4a89, type: 3}
       propertyPath: diagonalAngle

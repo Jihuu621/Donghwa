@@ -29,6 +29,7 @@ public class CentralPull : MonoBehaviour
 
     private LineRenderer pullLine;
     private Material pullLineMaterial;
+    private CheshireCatAI crushCandidate;
 
     /// <summary>
     /// 두 블록(또는 이미 합쳐진 두 그룹)을 수평 일렬 목표점으로 당긴다.
@@ -77,6 +78,7 @@ public class CentralPull : MonoBehaviour
         aPull.SetIgnoredPair(aColliders, bColliders);
         bPull.SetIgnoredPair(bColliders, aColliders);
         aPull.CreatePullLine();
+        aPull.TrackBossInClosingCorridor();
 
         return true;
     }
@@ -133,6 +135,8 @@ public class CentralPull : MonoBehaviour
             return;
         }
 
+        if (ownsMerge) TrackBossInClosingCorridor();
+
         if (!hasReachedTarget)
         {
             Vector2 toTarget = targetPosition - rb.position;
@@ -172,6 +176,7 @@ public class CentralPull : MonoBehaviour
         // 당김 과정의 물리 오차와 그룹 루트의 피벗 오차를 제거한다.
         // 이 단계는 선택 순서와 무관하게 현재 콜라이더의 좌우 경계를 다시 맞춘다.
         SnapPairToFinalLayout();
+        TryDamageSandwichedBosses();
 
         RestorePairCollisions();
         partnerPull.RestorePairCollisions();
@@ -534,9 +539,21 @@ public class CentralPull : MonoBehaviour
         TryRemoveSandwichedEnemy(collision);
     }
 
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        TryDamageSandwichedBoss(other);
+    }
+
+    private void OnTriggerStay2D(Collider2D other)
+    {
+        // 체셔캣의 본체는 Trigger이므로 양쪽 물체가 닫히는 동안 계속 압착 여부를 확인한다.
+        TryDamageSandwichedBoss(other);
+    }
+
     private void TryRemoveSandwichedEnemy(Collision2D collision)
     {
         if (!isInitialized || isStopped || collision.gameObject == null) return;
+        if (TryDamageSandwichedBoss(collision.collider)) return;
 
         GameObject target = collision.gameObject;
         if (!target.CompareTag("Enemy")) return;
@@ -549,6 +566,116 @@ public class CentralPull : MonoBehaviour
         if (!IsEnemySandwiched(target)) return;
 
         RemoveEnemy(target);
+    }
+
+    private void TryDamageSandwichedBosses()
+    {
+        if (partnerPull == null) return;
+
+        if (crushCandidate != null)
+        {
+            crushCandidate.TryApplyRopeCrushDamage(gameObject);
+        }
+
+        CheshireCatAI[] bosses = FindObjectsByType<CheshireCatAI>(FindObjectsInactive.Exclude);
+        foreach (CheshireCatAI boss in bosses)
+        {
+            if (boss != null && IsBossSandwiched(boss))
+            {
+                boss.TryApplyRopeCrushDamage(gameObject);
+            }
+        }
+    }
+
+    private void TrackBossInClosingCorridor()
+    {
+        if (crushCandidate != null &&
+            crushCandidate.IsRopeCrushVulnerable())
+        {
+            return;
+        }
+
+        crushCandidate = null;
+        CheshireCatAI boss = FindAnyObjectByType<CheshireCatAI>(FindObjectsInactive.Exclude);
+        if (boss == null || !boss.IsRopeCrushVulnerable()) return;
+        if (IsBossInClosingCorridor(boss)) crushCandidate = boss;
+    }
+
+    private bool IsBossInClosingCorridor(CheshireCatAI boss)
+    {
+        if (boss == null || partnerPull == null) return false;
+        if (!TryGetObjectBounds(gameObject, out Bounds firstBounds) ||
+            !TryGetObjectBounds(partnerPull.gameObject, out Bounds secondBounds) ||
+            !TryGetObjectBounds(boss.gameObject, out Bounds bossBounds))
+        {
+            return false;
+        }
+
+        Bounds leftBounds = firstBounds.center.x <= secondBounds.center.x
+            ? firstBounds
+            : secondBounds;
+        Bounds rightBounds = firstBounds.center.x <= secondBounds.center.x
+            ? secondBounds
+            : firstBounds;
+
+        bool horizontallyBetween = bossBounds.center.x >= leftBounds.center.x &&
+                                   bossBounds.center.x <= rightBounds.center.x;
+        float corridorBottom = Mathf.Min(leftBounds.min.y, rightBounds.min.y);
+        float corridorTop = Mathf.Max(leftBounds.max.y, rightBounds.max.y);
+        bool overlapsCorridorHeight = bossBounds.max.y >= corridorBottom &&
+                                      bossBounds.min.y <= corridorTop;
+
+        return horizontallyBetween && overlapsCorridorHeight;
+    }
+
+    private bool TryDamageSandwichedBoss(Collider2D collider)
+    {
+        CheshireCatAI boss = collider != null
+            ? collider.GetComponentInParent<CheshireCatAI>()
+            : null;
+        if (boss == null) return false;
+        if (!isInitialized || isStopped || partnerPull == null) return true;
+
+        if (IsBossSandwiched(boss))
+        {
+            boss.TryApplyRopeCrushDamage(gameObject);
+        }
+
+        return true;
+    }
+
+    private bool IsBossSandwiched(CheshireCatAI boss)
+    {
+        if (boss == null || partnerPull == null) return false;
+
+        if (!TryGetObjectBounds(gameObject, out Bounds firstBounds) ||
+            !TryGetObjectBounds(partnerPull.gameObject, out Bounds secondBounds) ||
+            !TryGetObjectBounds(boss.gameObject, out Bounds bossBounds))
+        {
+            return false;
+        }
+
+        Bounds leftBounds = firstBounds.center.x <= secondBounds.center.x
+            ? firstBounds
+            : secondBounds;
+        Bounds rightBounds = firstBounds.center.x <= secondBounds.center.x
+            ? secondBounds
+            : firstBounds;
+
+        // Trigger인 보스는 블록을 물리적으로 밀어내지 않는다. 따라서 접촉 캐시 대신
+        // 양 블록의 안쪽 면이 보스 폭만큼 닫혔고 보스 중심이 그 사이에 있는지 직접 본다.
+        float innerGap = rightBounds.min.x - leftBounds.max.x;
+        bool compressedToBoss = innerGap <= bossBounds.size.x + 0.02f;
+        bool horizontallyBetween = bossBounds.center.x >= leftBounds.center.x &&
+                                   bossBounds.center.x <= rightBounds.center.x;
+
+        float sharedBottom = Mathf.Max(leftBounds.min.y, rightBounds.min.y);
+        float sharedTop = Mathf.Min(leftBounds.max.y, rightBounds.max.y);
+        bool verticallyAligned = sharedBottom <= sharedTop &&
+                                 bossBounds.max.y >= sharedBottom &&
+                                 bossBounds.min.y <= sharedTop;
+
+        return compressedToBoss && horizontallyBetween && verticallyAligned;
     }
 
     private bool IsEnemySandwiched(GameObject enemy)
@@ -571,7 +698,7 @@ public class CentralPull : MonoBehaviour
             foreach (Collider2D secondCollider in second)
             {
                 if (secondCollider != null && secondCollider.enabled &&
-                    firstCollider.IsTouching(secondCollider))
+                    AreTouchingOrOverlapping(firstCollider, secondCollider))
                 {
                     return true;
                 }
@@ -579,6 +706,14 @@ public class CentralPull : MonoBehaviour
         }
 
         return false;
+    }
+
+    private static bool AreTouchingOrOverlapping(Collider2D first, Collider2D second)
+    {
+        if (first.IsTouching(second)) return true;
+
+        ColliderDistance2D distance = Physics2D.Distance(first, second);
+        return distance.isValid && (distance.isOverlapped || distance.distance <= 0.01f);
     }
 
     private static void RemoveEnemy(GameObject target)

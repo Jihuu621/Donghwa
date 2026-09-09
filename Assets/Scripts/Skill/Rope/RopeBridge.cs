@@ -5,6 +5,8 @@ using UnityEngine;
 [RequireComponent(typeof(EdgeCollider2D))]
 public class RopeBridge : MonoBehaviour
 {
+    private static readonly Dictionary<Collider2D, int> ActiveEndpointColliders = new Dictionary<Collider2D, int>();
+
     public GameObject segmentPrefab;
     public float segmentLength = 0.5f;
     public int minSegmentCount = 4;
@@ -35,6 +37,7 @@ public class RopeBridge : MonoBehaviour
     private List<Rigidbody2D> segmentRbs = new List<Rigidbody2D>();
     private List<Collider2D> segmentColliders = new List<Collider2D>();
     private readonly List<Vector2> tautPoints = new List<Vector2>();
+    private readonly List<Collider2D> registeredEndpointColliders = new List<Collider2D>();
     private HingeJoint2D endJoint;
     private bool isReleased;
     private float sagWeight;
@@ -44,6 +47,17 @@ public class RopeBridge : MonoBehaviour
 
     public GameObject StartObj { get; private set; }
     public GameObject EndObj { get; private set; }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetEndpointRegistry()
+    {
+        ActiveEndpointColliders.Clear();
+    }
+
+    public static bool IsActiveEndpointCollider(Collider2D collider)
+    {
+        return collider != null && ActiveEndpointColliders.ContainsKey(collider);
+    }
 
     private void Awake()
     {
@@ -62,8 +76,11 @@ public class RopeBridge : MonoBehaviour
 
     public void Setup(Transform start, Transform end)
     {
+        UnregisterEndpointColliders();
         StartObj = start.gameObject;
         EndObj = end.gameObject;
+        RegisterEndpointColliders(StartObj);
+        RegisterEndpointColliders(EndObj);
 
         // 이 오브젝트의 EdgeCollider2D가 실제 발판이다. 생성 직후 Ground 레이어로
         // 맞춰 PlayerController의 점프/지면 판정과 Physics 2D 충돌 설정을 적용한다.
@@ -168,6 +185,7 @@ public class RopeBridge : MonoBehaviour
     {
         if (isReleased) return;
         isReleased = true;
+        UnregisterEndpointColliders();
 
         enabled = false;
         if (line != null) line.enabled = false;
@@ -234,7 +252,42 @@ public class RopeBridge : MonoBehaviour
 
     private void OnDestroy()
     {
+        UnregisterEndpointColliders();
         ReleaseEndJoint();
+    }
+
+    private void RegisterEndpointColliders(GameObject endpoint)
+    {
+        if (endpoint == null) return;
+
+        Collider2D[] colliders = endpoint.GetComponentsInChildren<Collider2D>(true);
+        foreach (Collider2D collider in colliders)
+        {
+            if (collider == null || registeredEndpointColliders.Contains(collider)) continue;
+
+            registeredEndpointColliders.Add(collider);
+            ActiveEndpointColliders.TryGetValue(collider, out int referenceCount);
+            ActiveEndpointColliders[collider] = referenceCount + 1;
+        }
+    }
+
+    private void UnregisterEndpointColliders()
+    {
+        foreach (Collider2D collider in registeredEndpointColliders)
+        {
+            if (collider == null || !ActiveEndpointColliders.TryGetValue(collider, out int referenceCount)) continue;
+
+            if (referenceCount <= 1)
+            {
+                ActiveEndpointColliders.Remove(collider);
+            }
+            else
+            {
+                ActiveEndpointColliders[collider] = referenceCount - 1;
+            }
+        }
+
+        registeredEndpointColliders.Clear();
     }
 
     void Update()

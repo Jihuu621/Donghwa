@@ -316,6 +316,7 @@ MonoBehaviour:
   patternCCountersForGroggy: 3
   patternCGroggyDuration: 3
   patternCGroggyNeedleDamageMultiplier: 3
+  patternCRopeCrushMaxHealthRatio: 0.2
   patternCCounterReboundSpeed: 24
   patternCCounterReboundDuration: 0.1
   patternCCounterReboundLift: 3

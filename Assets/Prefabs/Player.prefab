@@ -462,7 +462,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55d443d507fcbfb4cb3a298423748b3d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  guardKey: 306
+  guardKey: 103
   perfectGuardWindow: 0.2
   guardWindow: 0.6
   recoveryDuration: 0.5

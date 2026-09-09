@@ -13,6 +13,7 @@ public class RainbowFlushSkill : MonoBehaviour
     public float rotateSpeed = 200f;
     public float targetRadius = 1.5f;
     public float lerpSpeed = 5f;
+    [SerializeField] private KeyCode castKey = KeyCode.H;
 
     [Header("Run Time")]
     public SkillState currentState = SkillState.Ready;
@@ -31,7 +32,7 @@ public class RainbowFlushSkill : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.F) && currentState == SkillState.Ready) GenerateCards();
+        if (Input.GetKeyDown(castKey) && currentState == SkillState.Ready) GenerateCards();
 
         if (currentState != SkillState.Ready)
         {

@@ -16,7 +16,7 @@ public class PlayerParry : MonoBehaviour
     }
 
     [Header("가드 입력")]
-    [SerializeField] private KeyCode guardKey = KeyCode.LeftControl;
+    [SerializeField] private KeyCode guardKey = KeyCode.G;
     [FormerlySerializedAs("parryWindow")]
     [SerializeField, Min(0.01f)] private float perfectGuardWindow = 0.2f;
     [SerializeField, Min(0.01f)] private float guardWindow = 0.6f;

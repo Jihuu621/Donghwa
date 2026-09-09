@@ -17,8 +17,8 @@ public class VisualScissor : MonoBehaviour
     [SerializeField, Min(0f)] private float scissorDamage = 10f;
 
     [Header("가위 커서 설정")]
-    public Texture2D scissorCursorTexture;
-    public Vector2 cursorHotspot = Vector2.zero;
+    [SerializeField] private Color squareCursorColor = Color.white;
+    [SerializeField, Min(0.05f)] private float squareCursorWorldSize = 0.35f;
 
     [Header("잘린 줄 소멸")]
     [SerializeField, Min(0f)] private float ropeCutPieceSeparation = 0.14f;
@@ -38,6 +38,9 @@ public class VisualScissor : MonoBehaviour
     private readonly HashSet<IDamageable> damagedTargets = new HashSet<IDamageable>();
     private ContactFilter2D snipContactFilter;
     private readonly HashSet<GameObject> fadingRopeObjects = new HashSet<GameObject>();
+    private GameObject squareCursorObject;
+    private Texture2D squareCursorTexture;
+    private Sprite squareCursorSprite;
 
     void Awake()
     {
@@ -72,6 +75,7 @@ public class VisualScissor : MonoBehaviour
         }
 
         if (!isScissorMode) return;
+        UpdateSquareCursorPosition();
 
         // 마우스 오른쪽 버튼 드래그시 시작
         if (Input.GetMouseButtonDown(1))
@@ -112,18 +116,82 @@ public class VisualScissor : MonoBehaviour
     void ActivateScissorMode()
     {
         isScissorMode = true;
-        if (scissorCursorTexture != null)
-        {
-            Cursor.SetCursor(scissorCursorTexture, cursorHotspot, CursorMode.Auto);
-        }
+        EnsureSquareCursor();
+        squareCursorObject.SetActive(true);
+        UpdateSquareCursorPosition();
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+        Cursor.visible = false;
     }
 
     void DeactivateScissorMode()
     {
         isScissorMode = false;
         isDragging = false;
-        lineRenderer.positionCount = 0;
+        if (lineRenderer != null) lineRenderer.positionCount = 0;
+        if (squareCursorObject != null) squareCursorObject.SetActive(false);
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+        Cursor.visible = true;
+    }
+
+    private void EnsureSquareCursor()
+    {
+        if (squareCursorObject != null) return;
+
+        const int textureSize = 16;
+        squareCursorTexture = new Texture2D(textureSize, textureSize, TextureFormat.RGBA32, false)
+        {
+            name = "Square Cut Cursor Texture",
+            filterMode = FilterMode.Point,
+            wrapMode = TextureWrapMode.Clamp
+        };
+
+        Color32 clear = new Color32(255, 255, 255, 0);
+        Color32 solid = new Color32(255, 255, 255, 255);
+        Color32[] pixels = new Color32[textureSize * textureSize];
+        for (int y = 0; y < textureSize; y++)
+        {
+            for (int x = 0; x < textureSize; x++)
+            {
+                bool border = x <= 1 || x >= textureSize - 2 || y <= 1 || y >= textureSize - 2;
+                pixels[y * textureSize + x] = border ? solid : clear;
+            }
+        }
+        squareCursorTexture.SetPixels32(pixels);
+        squareCursorTexture.Apply(false, true);
+
+        squareCursorSprite = Sprite.Create(squareCursorTexture,
+            new Rect(0f, 0f, textureSize, textureSize), new Vector2(0.5f, 0.5f), textureSize);
+        squareCursorSprite.name = "Square Cut Cursor Sprite";
+
+        squareCursorObject = new GameObject("Square Cut Cursor");
+        SpriteRenderer renderer = squareCursorObject.AddComponent<SpriteRenderer>();
+        renderer.sprite = squareCursorSprite;
+        renderer.color = squareCursorColor;
+        renderer.sortingOrder = short.MaxValue;
+        squareCursorObject.transform.localScale = Vector3.one * squareCursorWorldSize;
+        squareCursorObject.SetActive(false);
+    }
+
+    private void UpdateSquareCursorPosition()
+    {
+        if (squareCursorObject == null || Camera.main == null) return;
+
+        Vector3 position = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        position.z = 0f;
+        squareCursorObject.transform.position = position;
+    }
+
+    private void OnDisable()
+    {
+        DeactivateScissorMode();
+    }
+
+    private void OnDestroy()
+    {
+        Cursor.visible = true;
+        if (squareCursorObject != null) Destroy(squareCursorObject);
+        if (squareCursorSprite != null) Destroy(squareCursorSprite);
+        if (squareCursorTexture != null) Destroy(squareCursorTexture);
     }
 
     void Snip(Vector2 start, Vector2 end) // 선에 닿아있는 물체중 Sliceable컴포넌트 있는거 조각으로 나누기 실행코드

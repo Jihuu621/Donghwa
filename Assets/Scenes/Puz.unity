@@ -12079,8 +12079,8 @@ MonoBehaviour:
   lineColor: {r: 1, g: 0, b: 0, a: 1}
   lineWidth: 0.05
   scissorDamage: 10
-  scissorCursorTexture: {fileID: 2800000, guid: 0735b815ab1ae8b4888430a485659067, type: 3}
-  cursorHotspot: {x: 0, y: 0}
+  squareCursorColor: {r: 1, g: 1, b: 1, a: 1}
+  squareCursorWorldSize: 0.35
   ropeCutPieceSeparation: 0.14
   ropeCutPieceSpeed: 2.4
   ropeCutPieceLift: 1.1
@@ -23723,23 +23723,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5589571593274590829, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
   m_PrefabInstance: {fileID: 6172380690970361205}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1903764452
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 561956818}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f7757aa8b9719e24287cbba7d358b7c9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cardPrefab: {fileID: 3723439793254497666, guid: 182a69b852db6ca49b523366e1b82c06, type: 3}
-  rotateSpeed: 200
-  targetRadius: 1.5
-  lerpSpeed: 5
-  currentState: 0
 --- !u!120 &1903764461
 LineRenderer:
   serializedVersion: 3
@@ -23870,27 +23853,6 @@ MonoBehaviour:
   gravity: -3
   constraintIterations: 5
   tightness: 0.3
---- !u!114 &1903764463
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 561956818}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a1e6670f8b64bbb439160eea6593647b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  comboLeeway: 1
-  enemyLayer:
-    serializedVersion: 2
-    m_Bits: 0
-  damage: 10
-  hitRadius: 1.2
-  watchModel: {fileID: 0}
-  handTransform: {fileID: 1903764443}
-  chainPhysics: {fileID: 1903764462}
 --- !u!1 &1904536092
 GameObject:
   m_ObjectHideFlags: 0
@@ -24911,12 +24873,6 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 5329500642152477051, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1903764452}
-    - targetCorrespondingSourceObject: {fileID: 5329500642152477051, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1903764463}
     - targetCorrespondingSourceObject: {fileID: 5329500642152477051, guid: f84800b98b0f9c2439e4c6fd511786a0, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1903764462}

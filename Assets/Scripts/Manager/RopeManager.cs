@@ -30,7 +30,7 @@ public class RopeManager : MonoBehaviour
             HandleSelection();
         }
 
-        if (Input.GetKeyDown(KeyCode.LeftAlt) || Input.GetKeyDown(KeyCode.RightAlt))
+        if (Input.GetKeyDown(KeyCode.F))
         {
             ExecuteAllCentralPulls();
         }

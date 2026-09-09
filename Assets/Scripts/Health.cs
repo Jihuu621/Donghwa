@@ -7,15 +7,29 @@ public class Health : MonoBehaviour, IDamageable
 
     public float CurrentHP { get; private set; }
     public float MaxHP => maxHP;
+    public bool IsInvincible => isInvincible;
 
     public event Action OnDeath;
     public event Action<float, float> OnHealthChanged;
 
     private bool isDead = false;
+    private bool isPlayer;
+    private bool isInvincible;
 
     private void Awake()
     {
+        isPlayer = CompareTag("Player");
         CurrentHP = maxHP;
+    }
+
+    private void Update()
+    {
+        if (!isPlayer || !Input.GetKeyDown(KeyCode.P)) return;
+
+        isInvincible = !isInvincible;
+        Debug.Log(isInvincible
+            ? "<color=yellow>[플레이어 무적 모드 ON]</color>"
+            : "<color=white>[플레이어 무적 모드 OFF]</color>");
     }
 
     public void Init(float newMaxHP)
@@ -23,12 +37,13 @@ public class Health : MonoBehaviour, IDamageable
         maxHP = newMaxHP;
         CurrentHP = maxHP;
         isDead = false;
+        isInvincible = false;
         OnHealthChanged?.Invoke(CurrentHP, maxHP);
     }
     public void TakeDamage(float damage) => TakeDamage(damage, null);
     public void TakeDamage(float damage, GameObject source)
     {
-        if (isDead) return;
+        if (isDead || (isPlayer && isInvincible)) return;
 
         if (CompareTag("Player"))
         {
@@ -50,7 +65,7 @@ public class Health : MonoBehaviour, IDamageable
 
     public void ReduceHP(float damage)
     {
-        if (isDead) return;
+        if (isDead || (isPlayer && isInvincible)) return;
 
         CurrentHP -= damage;
         CurrentHP = Mathf.Max(CurrentHP, 0f);

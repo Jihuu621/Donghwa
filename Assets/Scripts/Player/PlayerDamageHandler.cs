@@ -28,6 +28,8 @@ public class PlayerDamageHandler : MonoBehaviour, IDamageable
     // 공통 데미지 처리 및 패링 로직
     private void ProcessDamage(float amount)
     {
+        if (_health != null && _health.IsInvincible) return;
+
         float finalDamage = amount;
 
         if (_parry != null)

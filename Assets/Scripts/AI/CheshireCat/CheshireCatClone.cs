@@ -8,7 +8,7 @@ public class CheshireCatClone : MonoBehaviour, IDamageable
     private static readonly int TeleportAnimationState = Animator.StringToHash("Base Layer.Cat_Attack1");
     private static readonly int TeleportAppearAnimationState = Animator.StringToHash("Base Layer.Cat_TeleportAppear");
     private static readonly int PatternBFireAnimationState = Animator.StringToHash("Base Layer.Cat_PatternB");
-    private const float PatternBFireAnimationLength = 1f;
+    private const float PatternBFireAnimationLength = 2f;
 
     private CheshireCatAI _owner;
     private Rigidbody2D _rigidbody;
@@ -172,7 +172,7 @@ public class CheshireCatClone : MonoBehaviour, IDamageable
         _deactivationTimer = Mathf.Max(0.01f, duration);
     }
 
-    public void FireProjectile()
+    public void BeginFireAnimation()
     {
         if (_active && !_ending && _owner != null)
         {
@@ -182,6 +182,13 @@ public class CheshireCatClone : MonoBehaviour, IDamageable
                 _animator.speed = 1f;
                 _animator.Play(PatternBFireAnimationState, 0, 0f);
             }
+        }
+    }
+
+    public void FireProjectile()
+    {
+        if (_active && !_ending && _owner != null)
+        {
             _owner.FirePatternBProjectile(transform.position, true, gameObject);
         }
     }

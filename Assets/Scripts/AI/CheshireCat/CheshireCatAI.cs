@@ -16,8 +16,15 @@ public class CheshireCatAI : EnemyAIBase
     private static readonly int PatternCChargeAnimationState = Animator.StringToHash("Base Layer.Cat_Gangzin");
     private static readonly int PatternBFireAnimationState = Animator.StringToHash("Base Layer.Cat_PatternB");
     private static readonly int LaughingAnimationState = Animator.StringToHash("Base Layer.Cat_Laughing");
-    private const float ScratchDashAnimationLength = 0.4166667f;
-    private const float PatternBFireAnimationLength = 1f;
+    private static readonly int OMGAnimationState = Animator.StringToHash("Base Layer.Cat_OMG");
+    private static readonly int OMGLoopAnimationState = Animator.StringToHash("Base Layer.Cat_OMG_Loop");
+    private const float ScratchDashHoldNormalizedTime = 0.4f;
+    private const float ScratchDashAttackNormalizedTime = 0.6f;
+    private const float ScratchDashPreparationClipLength = 0.1666667f;
+    private const float ScratchDashAttackClipLength = 0.1666667f;
+    private const float OMGIntroDuration = 0.08333334f;
+    private const float OMGAnimationLength = 0.33333334f;
+    private const float PatternBFireAnimationLength = 2f;
 
     public enum State
     {
@@ -27,6 +34,15 @@ public class CheshireCatAI : EnemyAIBase
         PatternCScratchWindup, PatternCScratchDash,
         PatternDSmokeEnter, PatternDActive, PatternDSmokeAppear, PatternDLaugh,
         Recovery, Stunned, Groggy
+    }
+
+    public enum DebugPattern
+    {
+        Disabled,
+        PatternA,
+        PatternB,
+        PatternC,
+        PatternD
     }
 
     public enum FallingObjectKind
@@ -84,8 +100,10 @@ public class CheshireCatAI : EnemyAIBase
 
     [Header("Scratch Attack")]
     [SerializeField, Min(0.1f)] private float meleeTriggerRange = 3f;
-    [SerializeField, Min(0f)] private float scratchWindupDuration = 1f;
-    [SerializeField, Min(0.01f)] private float scratchDashDuration = 0.25f;
+    [SerializeField, Min(0f)] private float scratchWindupDuration = 0.25f;
+    [SerializeField, Min(0f)] private float scratchDashHoldDuration = 0.305f;
+    [SerializeField, Min(0.01f)] private float scratchDashDuration = 0.16f;
+    [SerializeField, Min(0.01f)] private float scratchDashAttackAnimationDuration = 0.14f;
     [SerializeField, Min(0.1f)] private float scratchDashDistance = 3.25f;
 
     [Header("Hover Movement")]
@@ -103,6 +121,7 @@ public class CheshireCatAI : EnemyAIBase
     [Header("Pattern B")]
     [SerializeField] private CheshireProjectile patternBProjectilePrefab;
     [SerializeField, Min(0f)] private float patternBInitialShotDelay = 1.25f;
+    [SerializeField, Min(0f)] private float patternBProjectileReleaseDelay = 1.1f;
     [SerializeField, Min(0f)] private float patternBMoveDurationAfterShot = 16f;
     [SerializeField, Min(0f)] private float patternBPlayerSpawnMinimumDistance = 8f;
     [SerializeField, Min(0.1f)] private float patternBActorMinimumSeparation = 6f;
@@ -208,8 +227,10 @@ public class CheshireCatAI : EnemyAIBase
     [SerializeField, Min(0)] private int patternBProjectilePoolSize = 3;
     [SerializeField, Min(1)] private int patternDFallingObjectPoolSize = 32;
 
-    [Header("Debug")]
-    [SerializeField] private bool debugStartWithPatternD;
+    [Header("Debug Mode")]
+    [SerializeField] private DebugPattern debugPattern = DebugPattern.Disabled;
+    [SerializeField] private bool debugSkipIntroDialogue = true;
+    [SerializeField, Min(0f)] private float debugPatternRestartDelay = 0.8f;
 
     public State CurrentState { get; private set; }
     public bool IsSmokeForm { get; private set; }
@@ -222,6 +243,8 @@ public class CheshireCatAI : EnemyAIBase
     private int _teleportsCompleted;
     private Vector2 _scratchDashDirection;
     private float _scratchDashTravelSpeed;
+    private bool _omgLoopStarted;
+    private bool _patternCScratchReactionPending;
     private Color _normalColor;
     private bool _hasAttacked;
     private bool _hasWarnedNoTeleportPosition;
@@ -246,6 +269,8 @@ public class CheshireCatAI : EnemyAIBase
     private float _patternBShotTimer;
     private float _patternBPostShotTimer;
     private float _patternBFireAnimationTimer;
+    private float _patternBProjectileReleaseTimer;
+    private bool _patternBProjectileReleased;
     private float _laughingAnimationTimer;
     private AudioSource _musicAudioSource;
     private AudioSource _soundEffectAudioSource;
@@ -310,7 +335,8 @@ public class CheshireCatAI : EnemyAIBase
         PrewarmPatternDObjects();
         PrewarmProjectilePools();
         PlayIdleAnimation();
-        if (playIntroDialogue && HasIntroDialogue()) StartCoroutine(PlayIntroDialogueSequence());
+        bool skipIntro = debugPattern != DebugPattern.Disabled && debugSkipIntroDialogue;
+        if (!skipIntro && playIntroDialogue && HasIntroDialogue()) StartCoroutine(PlayIntroDialogueSequence());
         else BeginCombat();
     }
 
@@ -348,8 +374,52 @@ public class CheshireCatAI : EnemyAIBase
 
     private void BeginCombat()
     {
-        if (debugStartWithPatternD) BeginPatternD();
-        else ChangeState(State.Idle);
+        if (debugPattern == DebugPattern.Disabled) ChangeState(State.Idle);
+        else BeginDebugPattern();
+    }
+
+    private void BeginDebugPattern()
+    {
+        ResetDebugPatternArtifacts();
+
+        switch (debugPattern)
+        {
+            case DebugPattern.PatternA:
+                ChangeState(State.Idle);
+                break;
+            case DebugPattern.PatternB:
+                ChangeState(State.PatternBSmokeEnter);
+                break;
+            case DebugPattern.PatternC:
+                BeginPatternC();
+                break;
+            case DebugPattern.PatternD:
+                BeginPatternD();
+                break;
+            default:
+                ChangeState(State.Idle);
+                break;
+        }
+    }
+
+    private void ResetDebugPatternArtifacts()
+    {
+        Fsm.StopAllMovement();
+        DestroyClonesImmediately();
+        ReleaseAllPatternDObjects();
+        DeactivateProjectilePool(_projectilePool);
+        DeactivateProjectilePool(_patternBProjectilePool);
+        SetPatternDBodyHidden(false);
+        _resumePatternCAfterStun = false;
+        _patternCScratchReactionPending = false;
+        _patternCCounterReboundTimer = 0f;
+    }
+
+    private bool RestartIfDebugging(DebugPattern completedPattern)
+    {
+        if (debugPattern != completedPattern) return false;
+        ChangeState(State.Recovery);
+        return true;
     }
 
     private void Update()
@@ -456,6 +526,8 @@ public class CheshireCatAI : EnemyAIBase
                 _patternBShotTimer = patternBInitialShotDelay;
                 _patternBPostShotTimer = patternBMoveDurationAfterShot;
                 _patternBFireAnimationTimer = 0f;
+                _patternBProjectileReleaseTimer = 0f;
+                _patternBProjectileReleased = false;
                 PickPatternBMoveDirection();
                 break;
             case State.PatternBExit:
@@ -482,12 +554,13 @@ public class CheshireCatAI : EnemyAIBase
             case State.ScratchDash:
             case State.PatternCScratchDash:
                 SetSmokeForm(false);
-                PlayScratchDashAnimation();
+                PlayScratchDashAttackAnimation();
                 PlaySoundEffect(dashSoundClip);
                 break;
             case State.PatternCScratchWindup:
                 SetSmokeForm(false);
                 Fsm.StopAllMovement();
+                if (!_patternCScratchReactionPending) PlayScratchDashPreparationAnimation();
                 break;
             case State.PatternDActive:
                 SetSmokeForm(true);
@@ -509,20 +582,25 @@ public class CheshireCatAI : EnemyAIBase
                 PlayLaughingAnimation();
                 break;
             case State.RangedAttack:
-            case State.ScratchWindup:
                 SetSmokeForm(false);
                 Fsm.StopAllMovement();
                 BeginHover();
                 break;
+            case State.ScratchWindup:
+                SetSmokeForm(false);
+                Fsm.StopAllMovement();
+                BeginHover();
+                PlayScratchDashPreparationAnimation();
+                break;
             case State.Stunned:
                 SetSmokeForm(false);
                 Fsm.StopAllMovement();
-                PlayIdleAnimation();
+                PlayOMGAnimation();
                 break;
             case State.Groggy:
                 SetSmokeForm(false);
                 Fsm.StopAllMovement();
-                PlayIdleAnimation();
+                PlayOMGAnimation();
                 if (Fsm.Sr != null) Fsm.Sr.color = patternCGroggyTint;
                 break;
         }
@@ -580,7 +658,7 @@ public class CheshireCatAI : EnemyAIBase
         FacePlayer();
         UpdateHoverMovement();
         _stateTimer += Time.deltaTime;
-        if (_stateTimer < scratchWindupDuration) return;
+        if (!IsScratchWindupComplete()) return;
         PrepareScratchDash();
         ChangeState(State.ScratchDash);
     }
@@ -599,13 +677,20 @@ public class CheshireCatAI : EnemyAIBase
     {
         UpdateHoverMovement();
         _stateTimer += Time.deltaTime;
-        if (_stateTimer >= recoveryDuration) ChangeState(State.Idle);
+        float duration = debugPattern == DebugPattern.Disabled
+            ? recoveryDuration
+            : debugPatternRestartDelay;
+        if (_stateTimer < duration) return;
+
+        if (debugPattern == DebugPattern.Disabled) ChangeState(State.Idle);
+        else BeginDebugPattern();
     }
 
     private void UpdateStunned()
     {
         UpdatePatternCCounterRebound();
         _stateTimer += Time.deltaTime;
+        UpdateOMGStunLoop();
         if (_stateTimer < _stunDuration) return;
         _stunDuration = 0f;
 
@@ -614,7 +699,7 @@ public class CheshireCatAI : EnemyAIBase
             _resumePatternCAfterStun = false;
             if (_patternCRepeatsCompleted >= _patternCRepeatCount)
             {
-                BeginPatternD();
+                if (!RestartIfDebugging(DebugPattern.PatternC)) BeginPatternD();
             }
             else
             {
@@ -640,7 +725,13 @@ public class CheshireCatAI : EnemyAIBase
     private void CompleteAttack()
     {
         _teleportsCompleted++;
-        ChangeState(_teleportsCompleted >= _teleportCount ? State.PatternBSmokeEnter : State.SmokeEnter);
+        if (_teleportsCompleted < _teleportCount)
+        {
+            ChangeState(State.SmokeEnter);
+            return;
+        }
+
+        if (!RestartIfDebugging(DebugPattern.PatternA)) ChangeState(State.PatternBSmokeEnter);
     }
 
     private void UpdatePatternBSmokeEnter()
@@ -702,9 +793,15 @@ public class CheshireCatAI : EnemyAIBase
             _patternBShotTimer -= Time.deltaTime;
             if (_patternBShotTimer > 0f) return;
 
-            FirePatternBVolley();
+            BeginPatternBVolley();
             _hasAttacked = true;
             return;
+        }
+
+        if (!_patternBProjectileReleased)
+        {
+            _patternBProjectileReleaseTimer -= Time.deltaTime;
+            if (_patternBProjectileReleaseTimer <= 0f) ReleasePatternBVolley();
         }
 
         _patternBPostShotTimer -= Time.deltaTime;
@@ -717,7 +814,7 @@ public class CheshireCatAI : EnemyAIBase
         if (_stateTimer < smokeDuration) return;
 
         DestroyClonesImmediately();
-        BeginPatternC();
+        if (!RestartIfDebugging(DebugPattern.PatternB)) BeginPatternC();
     }
 
     private void BeginPatternC()
@@ -914,6 +1011,7 @@ public class CheshireCatAI : EnemyAIBase
         if (CurrentState != State.PatternCCharge) return;
 
         Fsm.StopAllMovement();
+        PlayOMGAnimation();
         if (hitSurface) PlayRandomDashImpactSound();
         if (_shockwaveVisual == null) PrewarmShockwaveVisual();
         _shockwaveVisual.Play(
@@ -923,6 +1021,7 @@ public class CheshireCatAI : EnemyAIBase
             patternCShockwaveColor);
 
         bool hitPlayer = ApplyPatternCShockwaveToPlayer(impactPosition);
+        _patternCScratchReactionPending = hitPlayer;
         ChangeState(hitPlayer ? State.PatternCScratchWindup : State.PatternCImpactPause);
     }
 
@@ -969,9 +1068,20 @@ public class CheshireCatAI : EnemyAIBase
 
     private void UpdatePatternCScratchWindup()
     {
+        if (_patternCScratchReactionPending)
+        {
+            _stateTimer += Time.deltaTime;
+            if (_stateTimer < OMGAnimationLength) return;
+
+            _patternCScratchReactionPending = false;
+            _stateTimer = 0f;
+            PlayScratchDashPreparationAnimation();
+            return;
+        }
+
         FacePlayer();
         _stateTimer += Time.deltaTime;
-        if (_stateTimer < scratchWindupDuration) return;
+        if (!IsScratchWindupComplete()) return;
 
         PrepareScratchDash();
         ChangeState(State.PatternCScratchDash);
@@ -993,7 +1103,7 @@ public class CheshireCatAI : EnemyAIBase
         _patternCRepeatsCompleted++;
         if (_patternCRepeatsCompleted >= _patternCRepeatCount)
         {
-            BeginPatternD();
+            if (!RestartIfDebugging(DebugPattern.PatternC)) BeginPatternD();
             return;
         }
 
@@ -1031,7 +1141,10 @@ public class CheshireCatAI : EnemyAIBase
     private void UpdateGroggy()
     {
         _stateTimer += Time.deltaTime;
-        if (_stateTimer >= patternCGroggyDuration) BeginPatternD();
+        UpdateOMGStunLoop();
+        if (_stateTimer < patternCGroggyDuration) return;
+
+        if (!RestartIfDebugging(DebugPattern.PatternC)) BeginPatternD();
     }
 
     private void BeginPatternD()
@@ -1482,10 +1595,23 @@ public class CheshireCatAI : EnemyAIBase
         return false;
     }
 
-    private void FirePatternBVolley()
+    private void BeginPatternBVolley()
     {
-        PlaySoundEffect(projectileSpawnSoundClip);
         PlayPatternBFireAnimation();
+        _patternBProjectileReleaseTimer = patternBProjectileReleaseDelay;
+        _patternBProjectileReleased = false;
+
+        for (int i = 0; i < _clones.Count; i++)
+        {
+            if (_clones[i] != null) _clones[i].BeginFireAnimation();
+        }
+    }
+
+    private void ReleasePatternBVolley()
+    {
+        if (_patternBProjectileReleased) return;
+        _patternBProjectileReleased = true;
+        PlaySoundEffect(projectileSpawnSoundClip);
         FirePatternBProjectile(transform.position, false, gameObject);
 
         for (int i = 0; i < _clones.Count; i++)
@@ -2037,6 +2163,19 @@ public class CheshireCatAI : EnemyAIBase
         transform.position += (Vector3)(_scratchDashDirection * _scratchDashTravelSpeed * Time.deltaTime);
     }
 
+    private bool IsScratchWindupComplete()
+    {
+        if (_stateTimer < scratchWindupDuration) return false;
+
+        if (_stateTimer < scratchWindupDuration + scratchDashHoldDuration)
+        {
+            HoldScratchDashFrame();
+            return false;
+        }
+
+        return true;
+    }
+
     private void FacePlayer()
     {
         if (Fsm.Player != null && Fsm.Sr != null) Fsm.Sr.flipX = Fsm.Player.position.x > transform.position.x;
@@ -2164,11 +2303,41 @@ public class CheshireCatAI : EnemyAIBase
         Fsm.Anim.Play(IdleAnimationState, 0, 0f);
     }
 
-    private void PlayScratchDashAnimation()
+    private void PlayScratchDashPreparationAnimation()
     {
         if (Fsm.Anim == null) return;
-        Fsm.Anim.speed = ScratchDashAnimationLength / Mathf.Max(scratchDashDuration, 0.01f);
+        Fsm.Anim.speed = ScratchDashPreparationClipLength / Mathf.Max(scratchWindupDuration, 0.01f);
         Fsm.Anim.Play(ScratchDashAnimationState, 0, 0f);
+    }
+
+    private void HoldScratchDashFrame()
+    {
+        if (Fsm.Anim == null) return;
+        Fsm.Anim.speed = 0f;
+        Fsm.Anim.Play(ScratchDashAnimationState, 0, ScratchDashHoldNormalizedTime);
+    }
+
+    private void PlayScratchDashAttackAnimation()
+    {
+        if (Fsm.Anim == null) return;
+        Fsm.Anim.speed = ScratchDashAttackClipLength / Mathf.Max(scratchDashAttackAnimationDuration, 0.01f);
+        Fsm.Anim.Play(ScratchDashAnimationState, 0, ScratchDashAttackNormalizedTime);
+    }
+
+    private void PlayOMGAnimation()
+    {
+        _omgLoopStarted = false;
+        if (Fsm.Anim == null) return;
+        Fsm.Anim.speed = 1f;
+        Fsm.Anim.Play(OMGAnimationState, 0, 0f);
+    }
+
+    private void UpdateOMGStunLoop()
+    {
+        if (_omgLoopStarted || _stateTimer < OMGIntroDuration || Fsm.Anim == null) return;
+        _omgLoopStarted = true;
+        Fsm.Anim.speed = 1f;
+        Fsm.Anim.Play(OMGLoopAnimationState, 0, 0f);
     }
 
     private void PlayPatternCChargeAnimation()
@@ -2271,7 +2440,9 @@ public class CheshireCatAI : EnemyAIBase
         diagonalAngle = Mathf.Clamp(diagonalAngle, 5f, 75f);
         meleeTriggerRange = Mathf.Max(0.1f, meleeTriggerRange);
         scratchWindupDuration = Mathf.Max(0f, scratchWindupDuration);
+        scratchDashHoldDuration = Mathf.Max(0f, scratchDashHoldDuration);
         scratchDashDuration = Mathf.Max(0.01f, scratchDashDuration);
+        scratchDashAttackAnimationDuration = Mathf.Max(0.01f, scratchDashAttackAnimationDuration);
         scratchDashDistance = Mathf.Max(0.1f, scratchDashDistance);
         hoverHorizontalAmplitude = Mathf.Max(0f, hoverHorizontalAmplitude);
         hoverVerticalAmplitude = Mathf.Max(0f, hoverVerticalAmplitude);
@@ -2280,6 +2451,7 @@ public class CheshireCatAI : EnemyAIBase
         hoverMaxSpeed = Mathf.Max(0.1f, hoverMaxSpeed);
         hoverResponsiveness = Mathf.Max(0.1f, hoverResponsiveness);
         patternBInitialShotDelay = Mathf.Max(0f, patternBInitialShotDelay);
+        patternBProjectileReleaseDelay = Mathf.Clamp(patternBProjectileReleaseDelay, 0f, PatternBFireAnimationLength);
         patternBMoveDurationAfterShot = Mathf.Max(0f, patternBMoveDurationAfterShot);
         patternBPlayerSpawnMinimumDistance = Mathf.Max(0f, patternBPlayerSpawnMinimumDistance);
         patternBActorMinimumSeparation = Mathf.Max(0.1f, patternBActorMinimumSeparation);
@@ -2347,6 +2519,7 @@ public class CheshireCatAI : EnemyAIBase
         projectilePoolSize = Mathf.Max(0, projectilePoolSize);
         patternBProjectilePoolSize = Mathf.Max(0, patternBProjectilePoolSize);
         patternDFallingObjectPoolSize = Mathf.Max(1, patternDFallingObjectPoolSize);
+        debugPatternRestartDelay = Mathf.Max(0f, debugPatternRestartDelay);
     }
 }
 

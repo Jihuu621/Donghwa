@@ -5,6 +5,25 @@ using UnityEngine;
 [RequireComponent(typeof(EffectManager))]
 public class PlayerController : MonoBehaviour
 {
+    private static readonly System.Collections.Generic.HashSet<Object> dialogueLocks = new();
+    public static bool IsDialogueInputLocked
+    {
+        get
+        {
+            dialogueLocks.RemoveWhere(owner => owner == null);
+            return dialogueLocks.Count > 0;
+        }
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetDialogueLocks() => dialogueLocks.Clear();
+
+    public static void SetDialogueInputLock(Object owner, bool locked)
+    {
+        if (locked && owner != null) dialogueLocks.Add(owner);
+        else dialogueLocks.Remove(owner);
+    }
+
     [Header("이동")]
     public float moveSpeed = 8f;                // 최대 속도
     public float acceleration = 60f;
@@ -99,6 +118,13 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (IsDialogueInputLocked)
+        {
+            StopDialogueMovement();
+            UpdateAnimations();
+            return;
+        }
+
         if (statusEffects == null) statusEffects = GetComponent<EffectManager>();
 
         // --- 입력 (구 Input System) ---
@@ -139,6 +165,18 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (IsDialogueInputLocked)
+        {
+            StopDialogueMovement();
+            if (jumpThroughRopes)
+            {
+                jumpThroughRopes = false;
+                SetRopePassThrough(false);
+            }
+            CheckSurroundings();
+            return;
+        }
+
         // 경사면을 걸어 올라갈 때의 양(+) Y 속도는 점프가 아니다. 실제 점프를
         // 실행했을 때만 줄 충돌을 통과시키고, 상승이 끝나면 즉시 다시 켠다.
         if (jumpThroughRopes && rb.linearVelocity.y <= 0.05f)
@@ -356,6 +394,19 @@ public class PlayerController : MonoBehaviour
                 dashAfterimageColor);
             dashAfterimageTrail.SetEmitting(true);
         }
+    }
+
+    private void StopDialogueMovement()
+    {
+        horizontal = 0f;
+        jumpBufferTimer = 0f;
+        coyoteTimer = 0f;
+        wallJumpTimer = 0f;
+        externalMomentumTimer = 0f;
+        isWallSliding = false;
+        if (isDashing) StopDash(true);
+        // Keep gravity and ground contacts; cancel horizontal control and upward launches.
+        rb.linearVelocity = new Vector2(0f, Mathf.Min(0f, rb.linearVelocity.y));
     }
 
     void SetRopePassThrough(bool passThrough)

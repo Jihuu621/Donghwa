@@ -14,7 +14,7 @@ public class PlayerPlatform : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.S) && currentPlatform != null)
+        if (!PlayerController.IsDialogueInputLocked && Input.GetKeyDown(KeyCode.S) && currentPlatform != null)
         {
             if (currentPlatform.GetComponent<PlatformEffector2D>() != null)
             {

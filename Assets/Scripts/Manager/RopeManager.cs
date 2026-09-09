@@ -17,6 +17,12 @@ public class RopeManager : MonoBehaviour
 
     void Update()
     {
+        if (PlayerController.IsDialogueInputLocked)
+        {
+            ClearSelection();
+            return;
+        }
+
         ValidateRuntimeState();
 
         if (Input.GetMouseButtonDown(1))

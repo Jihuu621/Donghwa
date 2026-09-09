@@ -91,7 +91,7 @@ public class PlayerParry : MonoBehaviour
         TickGuardState();
         TickGauge();
 
-        if (Input.GetKeyDown(guardKey)) TryActivateGuard();
+        if (!PlayerController.IsDialogueInputLocked && Input.GetKeyDown(guardKey)) TryActivateGuard();
     }
 
     private void TryActivateGuard()

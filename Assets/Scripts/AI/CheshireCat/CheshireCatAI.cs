@@ -303,6 +303,7 @@ public class CheshireCatAI : EnemyAIBase
     private int _patternDTargetCuts;
     private int _patternDFakeCuts;
     private bool _isDying;
+    private Coroutine _dialogueRoutine;
 
     private void OnEnable()
     {
@@ -311,6 +312,10 @@ public class CheshireCatAI : EnemyAIBase
 
     private void OnDisable()
     {
+        if (_dialogueRoutine != null) StopCoroutine(_dialogueRoutine);
+        _dialogueRoutine = null;
+        PlayerController.SetDialogueInputLock(this, false);
+        GetComponent<OverheadDialogueSpeaker>()?.StopSpeaking(true);
         CheshireProjectile.CloneDebuffRequested -= HandleCloneDebuffRequested;
     }
 
@@ -342,7 +347,7 @@ public class CheshireCatAI : EnemyAIBase
         PrewarmProjectilePools();
         PlayIdleAnimation();
         bool skipIntro = debugPattern != DebugPattern.Disabled && debugSkipIntroDialogue;
-        if (!skipIntro && playIntroDialogue && HasIntroDialogue()) StartCoroutine(PlayIntroDialogueSequence());
+        if (!skipIntro && playIntroDialogue && HasIntroDialogue()) _dialogueRoutine = StartCoroutine(PlayIntroDialogueSequence());
         else BeginCombat();
     }
 
@@ -359,6 +364,7 @@ public class CheshireCatAI : EnemyAIBase
 
     private IEnumerator PlayIntroDialogueSequence()
     {
+        PlayerController.SetDialogueInputLock(this, true);
         Fsm.StopAllMovement();
         OverheadDialogueSpeaker speaker = GetComponent<OverheadDialogueSpeaker>();
         if (speaker == null) speaker = gameObject.AddComponent<OverheadDialogueSpeaker>();
@@ -375,6 +381,7 @@ public class CheshireCatAI : EnemyAIBase
             while (speaker.IsSpeaking) yield return null;
         }
 
+        PlayerController.SetDialogueInputLock(this, false);
         BeginCombat();
     }
 
@@ -1395,11 +1402,12 @@ public class CheshireCatAI : EnemyAIBase
 
         OverheadDialogueSpeaker speaker = GetComponent<OverheadDialogueSpeaker>();
         if (speaker != null) speaker.StopSpeaking(true);
-        StartCoroutine(PlayDeathSequence());
+        _dialogueRoutine = StartCoroutine(PlayDeathSequence());
     }
 
     private IEnumerator PlayDeathSequence()
     {
+        PlayerController.SetDialogueInputLock(this, true);
         OverheadDialogueSpeaker speaker = GetComponent<OverheadDialogueSpeaker>();
         if (speaker == null) speaker = gameObject.AddComponent<OverheadDialogueSpeaker>();
         speaker.SetBubblePrefab(introBubblePrefab);
@@ -1418,6 +1426,7 @@ public class CheshireCatAI : EnemyAIBase
             }
         }
 
+        PlayerController.SetDialogueInputLock(this, false);
         PlaySmokeAnimation(TeleportAnimationState);
         if (_bodyParticleSystem != null)
         {

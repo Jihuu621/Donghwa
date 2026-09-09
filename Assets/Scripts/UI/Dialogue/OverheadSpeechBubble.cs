@@ -247,7 +247,7 @@ public sealed class OverheadSpeechBubble : MonoBehaviour
     {
         UpdateFollowPosition();
 
-        if (!IsVisible || _dialogue == null)
+        if (!IsVisible || _dialogue == null || _visibleCharacters <= 0)
         {
             return;
         }
@@ -285,13 +285,20 @@ public sealed class OverheadSpeechBubble : MonoBehaviour
     private void RefreshBaseGeometry()
     {
         _text.ForceMeshUpdate(true);
+        // TMP uploads entire vertex arrays for effects, including capacity left over
+        // from a longer line. Remove that tail before caching or uploading it.
+        for (int i = 0; i < _text.textInfo.meshInfo.Length; i++)
+        {
+            if (_text.textInfo.meshInfo[i].vertices != null)
+                _text.textInfo.meshInfo[i].ClearUnusedVertices();
+        }
         _baseMeshInfo = _text.textInfo.CopyMeshInfoVertexData();
         _geometryDirty = false;
     }
 
     private void ApplyCharacterEffects()
     {
-        if (_baseMeshInfo == null)
+        if (_baseMeshInfo == null || _baseMeshInfo.Length != _text.textInfo.meshInfo.Length)
         {
             return;
         }
@@ -301,7 +308,11 @@ public sealed class OverheadSpeechBubble : MonoBehaviour
         {
             Vector3[] source = _baseMeshInfo[materialIndex].vertices;
             Vector3[] destination = textInfo.meshInfo[materialIndex].vertices;
-            Array.Copy(source, destination, Mathf.Min(source.Length, destination.Length));
+            if (source == null || destination == null) continue;
+            int usedVertices = Mathf.Min(textInfo.meshInfo[materialIndex].vertexCount,
+                Mathf.Min(source.Length, destination.Length));
+            Array.Copy(source, destination, usedVertices);
+            Array.Clear(destination, usedVertices, destination.Length - usedVertices);
         }
 
         int count = Mathf.Min(Mathf.Min(textInfo.characterCount, _dialogue.Effects.Count), _visibleCharacters);
@@ -653,12 +664,23 @@ public sealed class OverheadSpeechBubble : MonoBehaviour
 
     private void ClearRenderedText()
     {
+        _baseMeshInfo = null;
+        _geometryDirty = false;
         if (_text == null) return;
 
         _text.text = string.Empty;
         _text.maxVisibleCharacters = 0;
         _text.ForceMeshUpdate(true, true);
-        _text.canvasRenderer.Clear();
+        // Empty TMP text can early-out without overwriting old mesh buffers.
+        // Clear primary AND fallback-font submeshes, not just the main renderer.
+        for (int i = 0; i < _text.textInfo.meshInfo.Length; i++)
+            _text.textInfo.meshInfo[i].Clear(true);
+        _text.ClearMesh();
+    }
+
+    private void OnDisable()
+    {
+        HideImmediately();
     }
 
     private ParsedDialogue Parse(string rawDialogue)

@@ -113,6 +113,7 @@ public class NeedleSkillManager : MonoBehaviour
 
     private void Update()
     {
+        if (PlayerController.IsDialogueInputLocked) return;
         if (Input.GetMouseButtonDown(1))
         {
             TryThrowNeedle();
@@ -128,7 +129,8 @@ public class NeedleSkillManager : MonoBehaviour
     {
         if (!isGrappling) return;
 
-        if (grappleNeedle == null || !grappleNeedle.gameObject.activeInHierarchy ||
+        if (PlayerController.IsDialogueInputLocked ||
+            grappleNeedle == null || !grappleNeedle.gameObject.activeInHierarchy ||
             (playerStatusEffects != null && playerStatusEffects.BlocksMovement))
         {
             EndGrapple(false);
@@ -159,6 +161,7 @@ public class NeedleSkillManager : MonoBehaviour
 
     public bool TryThrowNeedle()
     {
+        if (PlayerController.IsDialogueInputLocked) return false;
         if (parryHalfUnits < 2)
         {
             OnNeedleThrowDenied?.Invoke();

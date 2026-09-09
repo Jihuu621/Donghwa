@@ -14,7 +14,7 @@ public class VisualScissor : MonoBehaviour
     public Material defaultSpriteMaterial;
     public Color lineColor = Color.red;
     public float lineWidth = 0.05f;
-    [SerializeField, Min(0f)] private float scissorDamage = 5f;
+    [SerializeField, Min(0f)] private float scissorDamage = 10f;
 
     [Header("가위 커서 설정")]
     public Texture2D scissorCursorTexture;
@@ -59,6 +59,12 @@ public class VisualScissor : MonoBehaviour
 
     void Update()
     {
+        if (PlayerController.IsDialogueInputLocked)
+        {
+            if (isScissorMode || isDragging) DeactivateScissorMode();
+            return;
+        }
+
         // 가위 모드
         if (Input.GetKeyDown(KeyCode.R))
         {

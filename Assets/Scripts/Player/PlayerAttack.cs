@@ -250,6 +250,12 @@ public class PlayerAttack : MonoBehaviour
 
     private void Update()
     {
+        if (PlayerController.IsDialogueInputLocked)
+        {
+            OnDisable();
+            return;
+        }
+
         if (parry != null && !parry.IsReady)
         {
             return;
@@ -319,7 +325,7 @@ public class PlayerAttack : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!isHitboxActive || other == null || other.gameObject == gameObject)
+        if (PlayerController.IsDialogueInputLocked || !isHitboxActive || other == null || other.gameObject == gameObject)
         {
             return;
         }

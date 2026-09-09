@@ -28,7 +28,7 @@ public class RestZoneSkill : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(castKey))
+        if (!PlayerController.IsDialogueInputLocked && Input.GetKeyDown(castKey))
             Cast();
 
         if (IsZoneActive)

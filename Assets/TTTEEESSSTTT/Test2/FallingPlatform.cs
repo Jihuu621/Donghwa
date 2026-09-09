@@ -10,6 +10,8 @@ public class FallingPlatform : MonoBehaviour
 
     private Rigidbody2D rb;
     private bool isFunctional = true;
+    private readonly RaycastHit2D[] sweepHits = new RaycastHit2D[8];
+    private ContactFilter2D sweepFilter;
 
     void Awake()
     {
@@ -20,14 +22,33 @@ public class FallingPlatform : MonoBehaviour
         {
             rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         }
+
+        sweepFilter = ContactFilter2D.noFilter;
+        sweepFilter.useTriggers = true;
+    }
+
+    private void FixedUpdate()
+    {
+        if (!CanDealImpactDamage()) return;
+
+        Vector2 velocity = rb.linearVelocity;
+        float distance = velocity.magnitude * Time.fixedDeltaTime;
+        if (distance <= 0f) return;
+
+        int hitCount = rb.Cast(velocity / velocity.magnitude, sweepFilter, sweepHits, distance);
+        for (int i = 0; i < hitCount; i++)
+        {
+            if (TryDamageTarget(sweepHits[i].collider)) return;
+        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision == null || collision.collider == null) return;
-        if (TryDamageTarget(collision.collider)) return;
+        // Collision2D.collider는 이 물체의 콜라이더다. 대상은 otherCollider로 읽어야 한다.
+        if (collision == null || collision.otherCollider == null) return;
+        if (TryDamageTarget(collision.otherCollider)) return;
 
-        if (CanDealImpactDamage() && IsGround(collision.collider))
+        if (CanDealImpactDamage() && IsGround(collision.otherCollider))
         {
             DisablePlatformFunction();
         }
@@ -35,6 +56,13 @@ public class FallingPlatform : MonoBehaviour
 
     // CheshireCat의 본체 콜라이더는 Trigger이므로 일반 충돌 콜백만으로는 피해를 줄 수 없다.
     private void OnTriggerEnter2D(Collider2D other)
+    {
+        TryDamageTarget(other);
+    }
+
+    // 잘린 직후 보스와 이미 겹친 경우에는 Enter 이벤트가 새로 오지 않을 수 있다.
+    // 낙하 속도가 생긴 다음 물리 스텝에서도 한 번만 피해를 판정한다.
+    private void OnTriggerStay2D(Collider2D other)
     {
         TryDamageTarget(other);
     }

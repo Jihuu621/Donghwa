@@ -90,6 +90,8 @@ public class PlayerController : MonoBehaviour
         anim = GetComponent<Animator>();
         statusEffects = GetComponent<EffectManager>();
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+        // Sweep between physics steps so jumps and dashes cannot skip thin terrain.
+        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         rb.gravityScale = gravityScale;
         jumpsRemaining = extraJumps;
         SetupDashAfterimage();

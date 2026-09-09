@@ -443,18 +443,36 @@ public class RopeBridge : MonoBehaviour
         TryGetObjectBounds(StartObj.transform, out Bounds startBounds);
         TryGetObjectBounds(EndObj.transform, out Bounds endBounds);
 
-        if (startBounds.center.x <= endBounds.center.x)
-        {
-            startPoint = new Vector2(startBounds.max.x, startBounds.center.y);
-            endPoint = new Vector2(endBounds.min.x, endBounds.center.y);
-        }
-        else
-        {
-            startPoint = new Vector2(startBounds.min.x, startBounds.center.y);
-            endPoint = new Vector2(endBounds.max.x, endBounds.center.y);
-        }
+        // Connect through the facing edges. This keeps vertical pairs top-to-bottom,
+        // horizontal pairs side-to-side, and diagonal pairs from cutting through a block.
+        Vector2 startCenter = startBounds.center;
+        Vector2 endCenter = endBounds.center;
+        Vector2 direction = endCenter - startCenter;
+        if (direction.sqrMagnitude < Mathf.Epsilon) return false;
+
+        startPoint = GetBoundsEdgePoint(startBounds, direction);
+        endPoint = GetBoundsEdgePoint(endBounds, -direction);
 
         return true;
+    }
+
+    private static Vector2 GetBoundsEdgePoint(Bounds bounds, Vector2 toward)
+    {
+        Vector2 center = bounds.center;
+        Vector2 extents = bounds.extents;
+        Vector2 direction = toward.normalized;
+
+        float xScale = Mathf.Abs(direction.x) > Mathf.Epsilon
+            ? extents.x / Mathf.Abs(direction.x)
+            : float.PositiveInfinity;
+        float yScale = Mathf.Abs(direction.y) > Mathf.Epsilon
+            ? extents.y / Mathf.Abs(direction.y)
+            : float.PositiveInfinity;
+        float distanceToEdge = Mathf.Min(xScale, yScale);
+
+        return float.IsInfinity(distanceToEdge)
+            ? center
+            : center + direction * distanceToEdge;
     }
 
     private static bool TryGetObjectBounds(Transform root, out Bounds bounds)

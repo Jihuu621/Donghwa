@@ -135,8 +135,6 @@ public class PlayerController : MonoBehaviour
         }
         UpdateAnimations();
 
-        // 타이머
-        if (isGrounded) coyoteTimer = coyoteTime; else coyoteTimer -= Time.deltaTime;
     }
 
     void FixedUpdate()
@@ -148,12 +146,13 @@ public class PlayerController : MonoBehaviour
             jumpThroughRopes = false;
         }
 
-        RopeBridge[] bridges = FindObjectsOfType<RopeBridge>();
+        SetRopePassThrough(jumpThroughRopes);
 
-        for (int i = 0; i < bridges.Length; i++)
-        {
-            bridges[i].SetPassThrough(playerCollider, jumpThroughRopes);
-        }
+        // 물리 상태를 모든 조기 반환보다 먼저 갱신한다. 갈고리/스턴 직후에도
+        // 이전 프레임의 착지 상태가 남아 점프 버퍼를 놓치지 않게 한다.
+        CheckSurroundings();
+        if (isGrounded) coyoteTimer = coyoteTime;
+        else coyoteTimer = Mathf.Max(0f, coyoteTimer - Time.fixedDeltaTime);
 
         PlayerParry parry = GetComponent<PlayerParry>();
         bool statusStunned = statusEffects != null && statusEffects.BlocksMovement;
@@ -179,10 +178,14 @@ public class PlayerController : MonoBehaviour
         if (externalMomentumTimer > 0f)
         {
             externalMomentumTimer -= Time.fixedDeltaTime;
-            return;
+            // 갈고리를 놓은 직후의 관성 보존 중에도 점프 입력은 먹어야 한다.
+            // 실제로 점프 가능한 입력일 때만 관성 잠금을 해제한다.
+            bool canInterruptWithJump = jumpBufferTimer > 0f &&
+                (isGrounded || coyoteTimer > 0f || jumpsRemaining > 0 ||
+                 (isTouchingWall && !isGrounded && rb.linearVelocity.y < 0f));
+            if (!canInterruptWithJump) return;
+            externalMomentumTimer = 0f;
         }
-
-        CheckSurroundings();
 
         if (isDashing)
         {
@@ -202,8 +205,8 @@ public class PlayerController : MonoBehaviour
         }
 
         HandleMovement();
-        HandleJumping();
         HandleWallSlide();
+        HandleJumping();
 
         if (dashCooldownTimer > 0f) dashCooldownTimer -= Time.fixedDeltaTime;
     }
@@ -275,7 +278,7 @@ public class PlayerController : MonoBehaviour
         // 점프 버퍼 & 코요티 타임
         if (jumpBufferTimer > 0f)
         {
-            if (coyoteTimer > 0f || jumpsRemaining > 0 || isWallSliding)
+            if (isGrounded || coyoteTimer > 0f || jumpsRemaining > 0 || isWallSliding)
             {
                 if (isWallSliding)
                 {
@@ -294,6 +297,9 @@ public class PlayerController : MonoBehaviour
                 }
 
                 jumpThroughRopes = true;
+                // 다음 FixedUpdate까지 기다리면 현재 물리 스텝에서 로프 끝/옆면에
+                // 다시 걸릴 수 있으므로 점프가 확정되는 즉시 충돌을 해제한다.
+                SetRopePassThrough(true);
                 jumpBufferTimer = 0f;
                 coyoteTimer = 0f;
             }
@@ -349,6 +355,20 @@ public class PlayerController : MonoBehaviour
                 dashAfterimageMinimumDistance,
                 dashAfterimageColor);
             dashAfterimageTrail.SetEmitting(true);
+        }
+    }
+
+    void SetRopePassThrough(bool passThrough)
+    {
+        if (playerCollider == null) return;
+
+        RopeBridge[] bridges = FindObjectsByType<RopeBridge>();
+        for (int i = 0; i < bridges.Length; i++)
+        {
+            if (bridges[i] != null)
+            {
+                bridges[i].SetPassThrough(playerCollider, passThrough);
+            }
         }
     }
 

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class CentralPull : MonoBehaviour
 {
@@ -18,6 +19,7 @@ public class CentralPull : MonoBehaviour
     private bool mergeStarted;
 
     private RigidbodyType2D previousBodyType;
+    private bool previousUseFullKinematicContacts;
     private float previousGravityScale;
     private RigidbodyConstraints2D previousConstraints;
     private CollisionDetectionMode2D previousCollisionMode;
@@ -101,12 +103,16 @@ public class CentralPull : MonoBehaviour
         ownsMerge = mergeOwner;
 
         previousBodyType = rb.bodyType;
+        previousUseFullKinematicContacts = rb.useFullKinematicContacts;
         previousGravityScale = rb.gravityScale;
         previousConstraints = rb.constraints;
         previousCollisionMode = rb.collisionDetectionMode;
         previousInterpolation = rb.interpolation;
 
-        rb.bodyType = RigidbodyType2D.Dynamic;
+        // Physics impulses from nearby platforms used to deflect or launch the blocks
+        // during a merge. Kinematic motion follows the authored path without rebound.
+        rb.bodyType = RigidbodyType2D.Kinematic;
+        rb.useFullKinematicContacts = true;
         rb.gravityScale = 0f;
         rb.linearVelocity = Vector2.zero;
         rb.angularVelocity = 0f;
@@ -144,13 +150,14 @@ public class CentralPull : MonoBehaviour
 
             if (toTarget.sqrMagnitude <= (maxStep + ArrivalTolerance) * (maxStep + ArrivalTolerance))
             {
-                rb.position = targetPosition;
+                rb.MovePosition(targetPosition);
                 rb.linearVelocity = Vector2.zero;
                 hasReachedTarget = true;
             }
             else
             {
-                rb.linearVelocity = toTarget.normalized * pullSpeed;
+                rb.linearVelocity = Vector2.zero;
+                rb.MovePosition(rb.position + toTarget.normalized * maxStep);
             }
         }
 
@@ -481,6 +488,7 @@ public class CentralPull : MonoBehaviour
             rb.linearVelocity = Vector2.zero;
             rb.angularVelocity = 0f;
             rb.bodyType = previousBodyType;
+            rb.useFullKinematicContacts = previousUseFullKinematicContacts;
             rb.gravityScale = previousGravityScale;
             rb.constraints = previousConstraints;
             rb.collisionDetectionMode = previousCollisionMode;
@@ -509,6 +517,14 @@ public class CentralPull : MonoBehaviour
             (a.transform.position.z + b.transform.position.z) * 0.5f);
         merged.layer = a.layer;
 
+        // Boss phase maps are enabled/disabled as hierarchy roots. Keep a merged
+        // structure under its original common Tilemap so it disappears with that phase.
+        Transform phaseTilemap = FindSharedTilemapAncestor(a.transform, b.transform);
+        if (phaseTilemap != null)
+        {
+            merged.transform.SetParent(phaseTilemap, true);
+        }
+
         // 월드 배치를 유지하므로 A+B로 만든 D의 내부 형태도 D+C 합체에서 그대로 보존된다.
         a.transform.SetParent(merged.transform, true);
         b.transform.SetParent(merged.transform, true);
@@ -526,6 +542,20 @@ public class CentralPull : MonoBehaviour
 
         Physics2D.SyncTransforms();
         return merged;
+    }
+
+    private static Transform FindSharedTilemapAncestor(Transform first, Transform second)
+    {
+        Transform shared = null;
+        for (Transform current = first; current != null; current = current.parent)
+        {
+            if (current.GetComponent<Tilemap>() == null || !second.IsChildOf(current)) continue;
+            // Use the outermost shared tilemap: it is the phase root when the
+            // structure lives in nested Tilemaps.
+            shared = current;
+        }
+
+        return shared;
     }
 
     private void OnCollisionEnter2D(Collision2D collision)

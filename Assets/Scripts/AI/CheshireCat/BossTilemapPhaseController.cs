@@ -182,6 +182,7 @@ public sealed class BossTilemapPhaseController : MonoBehaviour
         {
             int outgoing = _activePhaseIndex;
             int incoming = _requestedPhase;
+            ClearRopeBridgesForPhase(outgoing);
             SetCollision(incoming, false);
             Paint(incoming, 1f, 0f);
             _resolvedTilemaps[incoming].gameObject.SetActive(false);
@@ -254,11 +255,33 @@ public sealed class BossTilemapPhaseController : MonoBehaviour
     {
         for (int i = 0; i < _resolvedTilemaps.Count; i++)
         {
+            if (i != phase) ClearRopeBridgesForPhase(i);
             Paint(i, 0f, 1f);
             _resolvedTilemaps[i].gameObject.SetActive(i == phase);
             SetCollision(i, true);
         }
         _activePhaseIndex = phase;
+    }
+
+    private void ClearRopeBridgesForPhase(int phase)
+    {
+        if (phase < 0 || phase >= _resolvedTilemaps.Count) return;
+
+        Transform phaseRoot = _resolvedTilemaps[phase].transform;
+        RopeBridge[] bridges = FindObjectsByType<RopeBridge>(FindObjectsInactive.Include);
+        for (int i = 0; i < bridges.Length; i++)
+        {
+            RopeBridge bridge = bridges[i];
+            if (bridge == null) continue;
+
+            GameObject start = bridge.StartObj;
+            GameObject end = bridge.EndObj;
+            if ((start != null && start.transform.IsChildOf(phaseRoot)) ||
+                (end != null && end.transform.IsChildOf(phaseRoot)))
+            {
+                Destroy(bridge.gameObject);
+            }
+        }
     }
 
     private static int GetPhaseIndex(float healthRatio)

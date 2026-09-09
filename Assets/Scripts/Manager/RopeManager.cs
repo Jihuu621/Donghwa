@@ -17,6 +17,8 @@ public class RopeManager : MonoBehaviour
 
     void Update()
     {
+        ValidateRuntimeState();
+
         if (Input.GetMouseButtonDown(1))
         {
             HandleSelection();
@@ -37,7 +39,7 @@ public class RopeManager : MonoBehaviour
         {
             GameObject selected = GetTargetObject(hit.collider);
 
-            if (selected == null || selected.GetComponent<CentralPull>() != null)
+            if (!IsValidSelection(selected) || selected.GetComponent<CentralPull>() != null)
             {
                 ClearSelection();
                 return;
@@ -133,6 +135,52 @@ public class RopeManager : MonoBehaviour
         return false;
     }
 
+    void ValidateRuntimeState()
+    {
+        // 비활성화된 이전 페이즈의 GameObject도 Unity 참조 자체는 null이 아니다.
+        // 선택을 그대로 두면 다음 클릭이 이전 구조물과 연결되는 것으로 처리된다.
+        if (firstSelected != null && !IsValidSelection(firstSelected))
+        {
+            ClearSelection();
+        }
+
+        for (int i = activeBridges.Count - 1; i >= 0; i--)
+        {
+            RopeBridge bridge = activeBridges[i];
+            if (bridge == null)
+            {
+                activeBridges.RemoveAt(i);
+                continue;
+            }
+
+            if (!IsValidSelection(bridge.StartObj) || !IsValidSelection(bridge.EndObj))
+            {
+                Destroy(bridge.gameObject);
+                activeBridges.RemoveAt(i);
+            }
+        }
+    }
+
+    bool IsValidSelection(GameObject target)
+    {
+        if (target == null || !target.activeInHierarchy)
+        {
+            return false;
+        }
+
+        Collider2D[] colliders = target.GetComponentsInChildren<Collider2D>(true);
+        foreach (Collider2D col in colliders)
+        {
+            if (col != null && col.isActiveAndEnabled &&
+                (interactableLayer.value & (1 << col.gameObject.layer)) != 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     void ExecuteAllCentralPulls()
     {
         // Alt 전에 남아 있던 반쪽 선택이 합체 후 자식 블록을 직접 가리키지 않도록 비운다.
@@ -179,13 +227,18 @@ public class RopeManager : MonoBehaviour
 
     void SetObjectColor(GameObject obj, Color color)
     {
-        SpriteRenderer[] sprites = obj.GetComponentsInChildren<SpriteRenderer>();
+        SpriteRenderer[] sprites = obj.GetComponentsInChildren<SpriteRenderer>(true);
         foreach (var sprite in sprites) sprite.color = color;
     }
 
     void ResetObjectColor(GameObject obj)
     {
-        SpriteRenderer[] sprites = obj.GetComponentsInChildren<SpriteRenderer>();
+        SpriteRenderer[] sprites = obj.GetComponentsInChildren<SpriteRenderer>(true);
         foreach (var sprite in sprites) sprite.color = Color.white;
+    }
+
+    void OnDisable()
+    {
+        ClearSelection();
     }
 }

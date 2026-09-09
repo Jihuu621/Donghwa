@@ -589,7 +589,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NeedleSkillManager
   cooldown: 3
   throwSpeed: 25
-  needleDamage: 15
+  needleDamage: 5
   stunDuration: 1.5
   stunValue: 1
   knockbackForce: 3

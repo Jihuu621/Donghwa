@@ -182,7 +182,7 @@ public class CheshireCatAI : EnemyAIBase
     [SerializeField, Min(1)] private int patternCCountersForGroggy = 3;
     [SerializeField, Min(0.1f)] private float patternCGroggyDuration = 3f;
     [SerializeField, Min(1f)] private float patternCGroggyNeedleDamageMultiplier = 3f;
-    [SerializeField, Range(0.05f, 1f)] private float patternCRopeCrushMaxHealthRatio = 0.2f;
+    [SerializeField, Min(0f)] private float patternCRopeCrushDamage = 35f;
     [FormerlySerializedAs("patternCCounterReboundForce")]
     [SerializeField, Min(0f)] private float patternCCounterReboundSpeed = 24f;
     [SerializeField, Min(0.01f)] private float patternCCounterReboundDuration = 0.1f;
@@ -1169,7 +1169,7 @@ public class CheshireCatAI : EnemyAIBase
         if (health == null) return false;
 
         _ropeCrushDamageDealt = true;
-        health.TakeDamage(health.MaxHP * patternCRopeCrushMaxHealthRatio, source);
+        health.TakeDamage(patternCRopeCrushDamage, source);
         return true;
     }
 
@@ -2555,7 +2555,7 @@ public class CheshireCatAI : EnemyAIBase
         patternCCountersForGroggy = Mathf.Max(1, patternCCountersForGroggy);
         patternCGroggyDuration = Mathf.Max(0.1f, patternCGroggyDuration);
         patternCGroggyNeedleDamageMultiplier = Mathf.Max(1f, patternCGroggyNeedleDamageMultiplier);
-        patternCRopeCrushMaxHealthRatio = Mathf.Clamp(patternCRopeCrushMaxHealthRatio, 0.05f, 1f);
+        patternCRopeCrushDamage = Mathf.Max(0f, patternCRopeCrushDamage);
         patternCCounterReboundSpeed = Mathf.Max(0f, patternCCounterReboundSpeed);
         patternCCounterReboundDuration = Mathf.Max(0.01f, patternCCounterReboundDuration);
         patternCCounterReboundLift = Mathf.Max(0f, patternCCounterReboundLift);

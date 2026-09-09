@@ -14,6 +14,7 @@ public class VisualScissor : MonoBehaviour
     public Material defaultSpriteMaterial;
     public Color lineColor = Color.red;
     public float lineWidth = 0.05f;
+    [SerializeField, Min(0f)] private float scissorDamage = 5f;
 
     [Header("가위 커서 설정")]
     public Texture2D scissorCursorTexture;
@@ -34,6 +35,7 @@ public class VisualScissor : MonoBehaviour
     private Vector2 dragEnd;
     private readonly RaycastHit2D[] snipHits = new RaycastHit2D[64];
     private readonly HashSet<IScissorCutTarget> snippedTargets = new HashSet<IScissorCutTarget>();
+    private readonly HashSet<IDamageable> damagedTargets = new HashSet<IDamageable>();
     private ContactFilter2D snipContactFilter;
     private readonly HashSet<GameObject> fadingRopeObjects = new HashSet<GameObject>();
 
@@ -123,6 +125,7 @@ public class VisualScissor : MonoBehaviour
         if (Vector2.Distance(start, end) < 0.1f) return;
 
         snippedTargets.Clear();
+        damagedTargets.Clear();
         int hitCount = Physics2D.Linecast(start, end, snipContactFilter, snipHits);
         for (int i = 0; i < hitCount; i++)
         {
@@ -131,6 +134,13 @@ public class VisualScissor : MonoBehaviour
             if (cutTarget != null)
             {
                 if (snippedTargets.Add(cutTarget)) cutTarget.TryScissorCut(start, end);
+                continue;
+            }
+
+            IDamageable damageable = hit.collider.GetComponentInParent<IDamageable>();
+            if (damageable != null)
+            {
+                if (damagedTargets.Add(damageable)) damageable.TakeDamage(scissorDamage, gameObject);
                 continue;
             }
 

@@ -177,7 +177,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d48b3edbb43f36e42b58656300bb6872, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CheshireCatHealth
-  maxHP: 50
+  maxHP: 800
 --- !u!114 &1932847501932847507
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -316,7 +316,7 @@ MonoBehaviour:
   patternCCountersForGroggy: 3
   patternCGroggyDuration: 3
   patternCGroggyNeedleDamageMultiplier: 3
-  patternCRopeCrushMaxHealthRatio: 0.2
+  patternCRopeCrushDamage: 35
   patternCCounterReboundSpeed: 24
   patternCCounterReboundDuration: 0.1
   patternCCounterReboundLift: 3

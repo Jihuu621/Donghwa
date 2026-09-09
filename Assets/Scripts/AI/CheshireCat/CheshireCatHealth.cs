@@ -4,7 +4,7 @@ using UnityEngine;
 [RequireComponent(typeof(CheshireCatAI), typeof(EnemyDataManager))]
 public class CheshireCatHealth : MonoBehaviour, IDamageable
 {
-    [SerializeField, Min(1f)] private float maxHP = 50f;
+    [SerializeField, Min(1f)] private float maxHP = 800f;
 
     public float CurrentHP { get; private set; }
     public float MaxHP => maxHP;

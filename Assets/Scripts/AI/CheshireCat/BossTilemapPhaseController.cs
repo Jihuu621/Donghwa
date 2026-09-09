@@ -6,15 +6,22 @@ using UnityEngine.Serialization;
 
 public sealed class BossTilemapPhaseController : MonoBehaviour
 {
-    private const int MaxPhaseCount = 5;
+    private const int MaxPhaseCount = 8;
 
     [Header("References")]
     [SerializeField] private CheshireCatHealth bossHealth;
     [SerializeField] private Transform tilemapRoot;
 
-    [Header("Phase Order (100%, 80%, 60%, 40%, 20%)")]
+    [Header("Phase Maps")]
     [Tooltip("Leave empty to use top-level Tilemaps under Tilemap Root in hierarchy order. Each Tilemap and all of its children form one phase.")]
     [SerializeField] private List<Tilemap> phaseTilemaps = new List<Tilemap>();
+
+    [Header("Phase Cycle")]
+    [Tooltip("1-based map numbers. The sequence wraps back to its first entry.")]
+    [SerializeField] private List<int> phaseMapOrder = new List<int> { 1, 3, 6, 2, 4, 7, 5 };
+    [SerializeField, Min(0.1f)] private float normalMapDamageToAdvance = 100f;
+    [SerializeField, Min(0.1f)] private float mapOneAndTwoDamageToAdvance = 40f;
+    [SerializeField, Min(0.1f)] private float automaticAdvanceSeconds = 20f;
 
     [Header("Spectral Transition")]
     [FormerlySerializedAs("previewDuration")]
@@ -35,8 +42,13 @@ public sealed class BossTilemapPhaseController : MonoBehaviour
     private bool _started;
 
     private readonly List<Tilemap> _resolvedTilemaps = new List<Tilemap>(MaxPhaseCount);
+    private readonly List<int> _phaseSequence = new List<int>(MaxPhaseCount);
     private bool _subscribed;
     private int _activePhaseIndex = -1;
+    private int _cyclePosition;
+    private float _damageTakenThisMap;
+    private float _mapElapsed;
+    private float _lastObservedHealth;
 
     private void Awake()
     {
@@ -50,7 +62,12 @@ public sealed class BossTilemapPhaseController : MonoBehaviour
     {
         Subscribe();
         if (_started && bossHealth != null)
-            ApplyHealth(bossHealth.CurrentHP, bossHealth.MaxHP, true);
+        {
+            _lastObservedHealth = bossHealth.CurrentHP;
+            if (_activePhaseIndex < 0) InitializeCycle();
+            else if (_transition == null && _requestedPhase != _activePhaseIndex)
+                _transition = StartCoroutine(Transition());
+        }
     }
 
     private void Start()
@@ -62,7 +79,17 @@ public sealed class BossTilemapPhaseController : MonoBehaviour
             return;
         }
 
-        ApplyHealth(bossHealth.CurrentHP, bossHealth.MaxHP, true);
+        InitializeCycle();
+    }
+
+    private void Update()
+    {
+        if (!_started || bossHealth == null || bossHealth.CurrentHP <= 0f ||
+            _phaseSequence.Count == 0 || _transition != null)
+            return;
+
+        _mapElapsed += Time.deltaTime;
+        if (_mapElapsed >= automaticAdvanceSeconds) AdvanceToNextMap();
     }
 
     private void OnDisable()
@@ -88,14 +115,31 @@ public sealed class BossTilemapPhaseController : MonoBehaviour
             AddIfValid(phaseTilemaps[i]);
         }
 
-        if (_resolvedTilemaps.Count > 0) return;
-
-        Tilemap[] discovered = tilemapRoot.GetComponentsInChildren<Tilemap>(true);
-        for (int i = 0; i < discovered.Length && _resolvedTilemaps.Count < MaxPhaseCount; i++)
+        if (_resolvedTilemaps.Count == 0)
         {
-            if (HasTilemapAncestorWithinRoot(discovered[i])) continue;
-            AddIfValid(discovered[i]);
+            Tilemap[] discovered = tilemapRoot.GetComponentsInChildren<Tilemap>(true);
+            for (int i = 0; i < discovered.Length && _resolvedTilemaps.Count < MaxPhaseCount; i++)
+            {
+                if (HasTilemapAncestorWithinRoot(discovered[i])) continue;
+                AddIfValid(discovered[i]);
+            }
         }
+
+        ResolvePhaseSequence();
+    }
+
+    private void ResolvePhaseSequence()
+    {
+        _phaseSequence.Clear();
+        for (int i = 0; phaseMapOrder != null && i < phaseMapOrder.Count; i++)
+        {
+            int index = phaseMapOrder[i] - 1;
+            if (index < 0 || index >= _resolvedTilemaps.Count || _phaseSequence.Contains(index)) continue;
+            _phaseSequence.Add(index);
+        }
+
+        if (_phaseSequence.Count > 0) return;
+        for (int i = 0; i < _resolvedTilemaps.Count; i++) _phaseSequence.Add(i);
     }
 
     private bool HasTilemapAncestorWithinRoot(Tilemap candidate)
@@ -153,26 +197,47 @@ public sealed class BossTilemapPhaseController : MonoBehaviour
 
     private void HandleHealthChanged(float currentHP, float maxHP)
     {
-        ApplyHealth(currentHP, maxHP, false);
+        float damage = Mathf.Max(0f, _lastObservedHealth - currentHP);
+        _lastObservedHealth = currentHP;
+        if (!_started || currentHP <= 0f || damage <= 0f) return;
+
+        _damageTakenThisMap += damage;
+        if (_damageTakenThisMap >= GetCurrentDamageThreshold()) AdvanceToNextMap();
     }
 
-    private void ApplyHealth(float currentHP, float maxHP, bool force)
+    private void InitializeCycle()
     {
-        if (_resolvedTilemaps.Count == 0 || maxHP <= 0f) return;
+        if (_phaseSequence.Count == 0) return;
 
-        float healthRatio = Mathf.Clamp01(currentHP / maxHP);
-        int requestedPhase = GetPhaseIndex(healthRatio);
-        int availablePhase = Mathf.Min(requestedPhase, _resolvedTilemaps.Count - 1);
+        if (_transition != null) StopCoroutine(_transition);
+        _transition = null;
+        _cyclePosition = 0;
+        _requestedPhase = _phaseSequence[_cyclePosition];
+        _damageTakenThisMap = 0f;
+        _mapElapsed = 0f;
+        _lastObservedHealth = bossHealth.CurrentHP;
+        Settle(_requestedPhase);
+    }
 
-        _requestedPhase = availablePhase;
-        if (force || _activePhaseIndex < 0)
-        {
-            if (_transition != null) StopCoroutine(_transition);
-            _transition = null;
-            Settle(availablePhase);
-        }
-        else if (_transition == null && availablePhase != _activePhaseIndex)
+    private void AdvanceToNextMap()
+    {
+        if (_phaseSequence.Count == 0) return;
+
+        _cyclePosition = (_cyclePosition + 1) % _phaseSequence.Count;
+        _requestedPhase = _phaseSequence[_cyclePosition];
+        _damageTakenThisMap = 0f;
+        _mapElapsed = 0f;
+
+        if (_transition == null && _requestedPhase != _activePhaseIndex)
             _transition = StartCoroutine(Transition());
+    }
+
+    private float GetCurrentDamageThreshold()
+    {
+        int mapNumber = _requestedPhase + 1;
+        return mapNumber == 1 || mapNumber == 2
+            ? mapOneAndTwoDamageToAdvance
+            : normalMapDamageToAdvance;
     }
 
     private IEnumerator Transition()
@@ -284,12 +349,10 @@ public sealed class BossTilemapPhaseController : MonoBehaviour
         }
     }
 
-    private static int GetPhaseIndex(float healthRatio)
+    private void OnValidate()
     {
-        if (healthRatio > 0.8f) return 0;
-        if (healthRatio > 0.6f) return 1;
-        if (healthRatio > 0.4f) return 2;
-        if (healthRatio > 0.2f) return 3;
-        return 4;
+        normalMapDamageToAdvance = Mathf.Max(0.1f, normalMapDamageToAdvance);
+        mapOneAndTwoDamageToAdvance = Mathf.Max(0.1f, mapOneAndTwoDamageToAdvance);
+        automaticAdvanceSeconds = Mathf.Max(0.1f, automaticAdvanceSeconds);
     }
 }

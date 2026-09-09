@@ -12,7 +12,7 @@ public class NeedleSkillManager : MonoBehaviour
     public float throwSpeed = 30f;
 
     [Header("Damage and Effects")]
-    public float needleDamage = 15f;
+    public float needleDamage = 5f;
     public float stunDuration = 1.5f;
     public float stunValue = 1f;
     public float knockbackForce = 3f;

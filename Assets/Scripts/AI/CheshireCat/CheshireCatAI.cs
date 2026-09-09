@@ -182,6 +182,7 @@ public class CheshireCatAI : EnemyAIBase
     [SerializeField, Min(1)] private int patternCCountersForGroggy = 3;
     [SerializeField, Min(0.1f)] private float patternCGroggyDuration = 3f;
     [SerializeField, Min(1f)] private float patternCGroggyNeedleDamageMultiplier = 3f;
+    [SerializeField, Range(0.05f, 1f)] private float patternCRopeCrushMaxHealthRatio = 0.2f;
     [FormerlySerializedAs("patternCCounterReboundForce")]
     [SerializeField, Min(0f)] private float patternCCounterReboundSpeed = 24f;
     [SerializeField, Min(0.01f)] private float patternCCounterReboundDuration = 0.1f;
@@ -238,6 +239,9 @@ public class CheshireCatAI : EnemyAIBase
     public float GroggyNeedleDamageMultiplier => patternCGroggyNeedleDamageMultiplier;
 
     private float _stateTimer;
+    [Header("Stun Flash")]
+    [SerializeField] private Color stunFlashColor = new Color(1f, 0.85f, 0.15f, 1f);
+
     private float _stunDuration;
     private int _teleportCount;
     private int _teleportsCompleted;
@@ -286,6 +290,8 @@ public class CheshireCatAI : EnemyAIBase
     private int _patternCCounterCount;
     private float _patternCCounterReboundTimer;
     private Vector2 _patternCCounterReboundVelocity;
+    private bool _ropeCounterStunActive;
+    private bool _ropeCrushDamageDealt;
     private CheshireAfterimageTrail _afterimageTrail;
     private CheshireShockwaveVisual _shockwaveVisual;
     private EffectManager _playerStatusEffects;
@@ -466,6 +472,7 @@ public class CheshireCatAI : EnemyAIBase
     {
         if (_isDying) return false;
         if (IsSmokeForm || IsGroggy) return false;
+        ClearRopeCrushWindow();
         if (CurrentState == State.PatternBActive) DestroyClonesImmediately();
         if (CurrentState == State.PatternCCharge)
         {
@@ -481,8 +488,18 @@ public class CheshireCatAI : EnemyAIBase
     {
         if (CurrentState == next)
         {
-            if (next == State.Stunned) _stateTimer = 0f;
+            if (next == State.Stunned)
+            {
+                _stateTimer = 0f;
+                UpdateStunFlash();
+            }
             return;
+        }
+
+        if (CurrentState == State.Stunned || CurrentState == State.Groggy)
+        {
+            ClearRopeCrushWindow();
+            if (Fsm.Sr != null) Fsm.Sr.color = _normalColor;
         }
 
         if (CurrentState == State.ScratchDash ||
@@ -596,6 +613,7 @@ public class CheshireCatAI : EnemyAIBase
                 SetSmokeForm(false);
                 Fsm.StopAllMovement();
                 PlayOMGAnimation();
+                UpdateStunFlash();
                 break;
             case State.Groggy:
                 SetSmokeForm(false);
@@ -690,6 +708,7 @@ public class CheshireCatAI : EnemyAIBase
     {
         UpdatePatternCCounterRebound();
         _stateTimer += Time.deltaTime;
+        UpdateStunFlash();
         UpdateOMGStunLoop();
         if (_stateTimer < _stunDuration) return;
         _stunDuration = 0f;
@@ -873,9 +892,9 @@ public class CheshireCatAI : EnemyAIBase
 
         _stateTimer += Time.deltaTime;
         Vector2 currentPosition = Fsm.Rb.position;
-        if (DetectThreadAcrossCharge(_patternCPreviousPosition, currentPosition))
+        if (DetectThreadAcrossCharge(_patternCPreviousPosition, currentPosition, out Collider2D counterCollider))
         {
-            HandlePatternCCounter();
+            HandlePatternCCounter(counterCollider);
             return;
         }
 
@@ -945,8 +964,9 @@ public class CheshireCatAI : EnemyAIBase
         }
     }
 
-    private bool DetectThreadAcrossCharge(Vector2 start, Vector2 end)
+    private bool DetectThreadAcrossCharge(Vector2 start, Vector2 end, out Collider2D counterCollider)
     {
+        counterCollider = null;
         Vector2 delta = end - start;
         float distance = delta.magnitude;
         if (distance < 0.001f) return false;
@@ -962,6 +982,7 @@ public class CheshireCatAI : EnemyAIBase
         {
             if (IsPatternCCounterThread(_threadHitBuffer[i].collider))
             {
+                counterCollider = _threadHitBuffer[i].collider;
                 return true;
             }
         }
@@ -997,7 +1018,7 @@ public class CheshireCatAI : EnemyAIBase
             IDamageable guardedPlayer = playerCollider.GetComponentInParent<IDamageable>();
             if (guardedPlayer != null) guardedPlayer.TakeDamage(patternCDirectHitDamage, gameObject);
             _patternCDirectHitDealt = true;
-            HandlePatternCCounter();
+            HandlePatternCCounter(null);
             return;
         }
 
@@ -1110,13 +1131,15 @@ public class CheshireCatAI : EnemyAIBase
         ChangeState(State.PatternCSmokeEnter);
     }
 
-    private void HandlePatternCCounter()
+    private void HandlePatternCCounter(Collider2D counterCollider)
     {
         if (CurrentState != State.PatternCCharge) return;
 
         _patternCCounterCount++;
         _patternCRepeatsCompleted++;
         Fsm.StopAllMovement();
+        _ropeCounterStunActive = IsRopeCounterThread(counterCollider);
+        _ropeCrushDamageDealt = false;
 
         if (_patternCCounterCount >= patternCCountersForGroggy)
         {
@@ -1124,6 +1147,7 @@ public class CheshireCatAI : EnemyAIBase
             return;
         }
 
+        _stunDuration = patternCThreadStunDuration;
         ChangeState(State.Stunned);
         if (Fsm.Rb != null)
         {
@@ -1134,8 +1158,41 @@ public class CheshireCatAI : EnemyAIBase
             Fsm.Rb.linearVelocity = _patternCCounterReboundVelocity;
         }
 
-        _stunDuration = patternCThreadStunDuration;
         _resumePatternCAfterStun = true;
+    }
+
+    public bool TryApplyRopeCrushDamage(GameObject source)
+    {
+        if (!IsRopeCrushVulnerable()) return false;
+
+        CheshireCatHealth health = GetComponent<CheshireCatHealth>();
+        if (health == null) return false;
+
+        _ropeCrushDamageDealt = true;
+        health.TakeDamage(health.MaxHP * patternCRopeCrushMaxHealthRatio, source);
+        return true;
+    }
+
+    public bool IsRopeCrushVulnerable()
+    {
+        return (CurrentState == State.Stunned || CurrentState == State.Groggy) &&
+               !_ropeCrushDamageDealt &&
+               _ropeCounterStunActive;
+    }
+
+    private void ClearRopeCrushWindow()
+    {
+        _ropeCounterStunActive = false;
+        _ropeCrushDamageDealt = false;
+    }
+
+    private void UpdateStunFlash()
+    {
+        if (Fsm.Sr == null) return;
+        Color flash = stunFlashColor;
+        flash.a = _normalColor.a;
+        float t = Mathf.Clamp01(_stateTimer / Mathf.Max(0.01f, _stunDuration));
+        Fsm.Sr.color = Color.Lerp(flash, _normalColor, Mathf.SmoothStep(0f, 1f, t));
     }
 
     private void UpdateGroggy()
@@ -2226,7 +2283,7 @@ public class CheshireCatAI : EnemyAIBase
 
         if (IsPatternCCounterThread(other))
         {
-            HandlePatternCCounter();
+            HandlePatternCCounter(other);
             return;
         }
 
@@ -2262,7 +2319,14 @@ public class CheshireCatAI : EnemyAIBase
     {
         return other != null &&
                (other.GetComponentInParent<NeedleThreadTrap>() != null ||
-                other.GetComponentInParent<RopeBridge>() != null);
+                IsRopeCounterThread(other));
+    }
+
+    private static bool IsRopeCounterThread(Collider2D other)
+    {
+        return other != null &&
+               (other.GetComponentInParent<RopeBridge>() != null ||
+                RopeBridge.IsActiveEndpointCollider(other));
     }
 
     private void SetSmokeForm(bool enabled)
@@ -2491,6 +2555,7 @@ public class CheshireCatAI : EnemyAIBase
         patternCCountersForGroggy = Mathf.Max(1, patternCCountersForGroggy);
         patternCGroggyDuration = Mathf.Max(0.1f, patternCGroggyDuration);
         patternCGroggyNeedleDamageMultiplier = Mathf.Max(1f, patternCGroggyNeedleDamageMultiplier);
+        patternCRopeCrushMaxHealthRatio = Mathf.Clamp(patternCRopeCrushMaxHealthRatio, 0.05f, 1f);
         patternCCounterReboundSpeed = Mathf.Max(0f, patternCCounterReboundSpeed);
         patternCCounterReboundDuration = Mathf.Max(0.01f, patternCCounterReboundDuration);
         patternCCounterReboundLift = Mathf.Max(0f, patternCCounterReboundLift);
